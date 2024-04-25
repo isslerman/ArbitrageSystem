@@ -10,7 +10,7 @@
 			"path": "project"
 		},
 		{
-			"path": "grpc-client"
+			"path": "pods"
 		}
 	]
 }
