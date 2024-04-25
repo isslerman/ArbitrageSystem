@@ -1,0 +1,16 @@
+{
+	"folders": [
+		{
+			"path": "hftorderbook-go"
+		},
+		{
+			"path": "grpc-server"
+		},
+		{
+			"path": "project"
+		},
+		{
+			"path": "grpc-client"
+		}
+	]
+}
