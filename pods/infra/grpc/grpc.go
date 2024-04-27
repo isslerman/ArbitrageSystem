@@ -6,8 +6,8 @@ package grpc
 import (
 	"context"
 	"fmt"
-	"grpc-client/internal/pb/orders"
 	"log"
+	"pods/internal/pb/orders"
 	"time"
 
 	"google.golang.org/grpc"
@@ -16,28 +16,37 @@ import (
 
 // Just a gRPC client that connects with our server and send a msg.
 type Config struct {
-	Host string `json:"host"`
-	Port int    `json:"port"`
+	host string
+	port int
+	Conn *grpc.ClientConn
 }
 
-func SendViaGRPC(orderAsk, orderBid *orders.Order) {
+func NewServiceGRPC() *Config {
 	app := Config{
-		Host: "localhost",
-		Port: 50001,
+		host: "localhost",
+		port: 50001,
 	}
-	target := fmt.Sprintf("%s:%d", app.Host, app.Port)
+
+	target := fmt.Sprintf("%s:%d", app.host, app.port)
 	conn, err := grpc.Dial(target, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 	if err != nil {
 		log.Fatal("Error Conn")
 	}
-	defer conn.Close()
+	// defer conn.Close()
 
-	// client
-	c := orders.NewOrderServiceClient(conn)
+	return &Config{
+		host: app.host,
+		port: app.port,
+		Conn: conn,
+	}
+}
+
+func (grpc *Config) SendViaGRPC(orderAsk, orderBid *orders.Order) {
+	c := orders.NewOrderServiceClient(grpc.Conn)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	_, err = c.WriteOrder(ctx, &orders.OrderRequest{
+	_, err := c.WriteOrder(ctx, &orders.OrderRequest{
 		OrderAsk: orderAsk,
 		OrderBid: orderBid,
 	})

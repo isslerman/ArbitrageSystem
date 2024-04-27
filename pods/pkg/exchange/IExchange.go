@@ -1,7 +1,8 @@
 package exchange
 
-import "grpc-client/internal/data"
+import "pods/internal/data"
 
 type IExchange interface {
-	BestOrder() (*data.BestOrder, error)
+	BestOrder() (*data.Ask, *data.Bid, error)
+	ExchangeID() string
 }

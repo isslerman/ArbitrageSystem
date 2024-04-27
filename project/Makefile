@@ -29,31 +29,31 @@ stop-all:
 ## start: start pod BINA
 start-BINA: 
 	@echo "Starting pod BINA"
-	cd ../grpc-client/build && ./${POD_BINA_BINARY} &
+	cd ../pods/build && ./${POD_BINA_BINARY} &
 	@echo "Done!"
 
 ## start: start pod MBTC
 start-BITP: 
 	@echo "Starting pod BITP"
-	cd ../grpc-client/build && ./${POD_BITP_BINARY} &
+	cd ../pods/build && ./${POD_BITP_BINARY} &
 	@echo "Done!"
 
 ## start: start pod MBTC
 start-MBTC: 
 	@echo "Starting pod MBTC"
-	cd ../grpc-client/build && ./${POD_MBTC_BINARY} &
+	cd ../pods/build && ./${POD_MBTC_BINARY} &
 	@echo "Done!"
 
 ## start: start pod FOXB
 start-FOXB: 
 	@echo "Starting pod FOXB"
-	cd ../grpc-client/build && ./${POD_FOXB_BINARY} &
+	cd ../pods/build && ./${POD_FOXB_BINARY} &
 	@echo "Done!"
 
 ## start: start pod RIPI
 start-RIPI: 
 	@echo "Starting pod RIPI"
-	cd ../grpc-client/build && ./${POD_RIPI_BINARY} &
+	cd ../pods/build && ./${POD_RIPI_BINARY} &
 	@echo "Done!"
 
 
@@ -65,31 +65,31 @@ build-all: build-pod-BINA build-pod-BITP build-pod-FOXB build-pod-MBTC build-pod
 ## build-pod-BINA: builds the pod binary as a macos executable
 build-pod-BINA:
 	@echo "Building pod BINA binary..."
-	cd ../grpc-client && env GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 go build -o ./build/${POD_BINA_BINARY} ./cmd/client-BINA
+	cd ../pods && env GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 go build -o ./build/${POD_BINA_BINARY} ./cmd/client-BINA
 	@echo "Done!"
 
 ## build-pod-BITP: builds the pod binary as a macos executable
 build-pod-BITP:
 	@echo "Building pod BITP binary..."
-	cd ../grpc-client && env GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 go build -o ./build/${POD_BITP_BINARY} ./cmd/client-BITP
+	cd ../pods && env GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 go build -o ./build/${POD_BITP_BINARY} ./cmd/client-BITP
 	@echo "Done!"
 
 ## build-pod-MBTC: builds the pod binary as a macos executable
 build-pod-MBTC:
 	@echo "Building pod MBTC binary..."
-	cd ../grpc-client && env GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 go build -o ./build/${POD_MBTC_BINARY} ./cmd/client-MBTC
+	cd ../pods && env GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 go build -o ./build/${POD_MBTC_BINARY} ./cmd/client-MBTC
 	@echo "Done!"
 
 ## build-pod-FOXB: builds the pod binary as a macos executable
 build-pod-FOXB:
 	@echo "Building pod FOXB binary..."
-	cd ../grpc-client && env GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 go build -o ./build/${POD_FOXB_BINARY} ./cmd/client-FOXB
+	cd ../pods && env GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 go build -o ./build/${POD_FOXB_BINARY} ./cmd/client-FOXB
 	@echo "Done!"
 
 ## build-pod-RIPI: builds the pod binary as a macos executable
 build-pod-RIPI:
 	@echo "Building pod RIPI binary..."
-	cd ../grpc-client && env GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 go build -o ./build/${POD_RIPI_BINARY} ./cmd/client-RIPI
+	cd ../pods && env GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 go build -o ./build/${POD_RIPI_BINARY} ./cmd/client-RIPI
 	@echo "Done!"
 
 

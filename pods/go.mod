@@ -1,4 +1,4 @@
-module grpc-client
+module pods
 
 go 1.21.6
 

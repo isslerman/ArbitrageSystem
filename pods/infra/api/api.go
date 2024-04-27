@@ -7,10 +7,10 @@ import (
 	"log"
 	"net/http"
 
-	"grpc-client/internal/pod"
-	"grpc-client/pkg/toolbox"
+	"pods/internal/pod"
+	"pods/pkg/toolbox"
 
-	"grpc-client/pkg/exchange"
+	"pods/pkg/exchange"
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"

@@ -9,9 +9,9 @@ package exchange
 
 import (
 	"encoding/json"
-	"grpc-client/internal/data"
 	"io"
 	"net/http"
+	"pods/internal/data"
 	"strconv"
 	"time"
 )
@@ -26,22 +26,24 @@ type MercadoBitcoin struct {
 
 func NewMercadoBitcoin() *MercadoBitcoin {
 	return &MercadoBitcoin{
-		apiURL:   "https://api.mercadobitcoin.net/api/v4/SOL-BRL/orderbook",
-		Id:       "MBTC",
-		Name:     "Mercado Bitcoin",
-		FeeTaker: 0.007,
-		FeeMaker: 0.003,
+		apiURL: "https://api.mercadobitcoin.net/api/v4/SOL-BRL/orderbook",
+		Id:     "MBTC",
+		Name:   "Mercado Bitcoin",
+		// FeeTaker: 0.007,
+		FeeTaker: 0.002,
+		// FeeMaker: 0.003,
+		FeeMaker: 0.001,
 	}
 }
 
-func (e *MercadoBitcoin) BestOrder() (*data.BestOrder, error) {
+func (e *MercadoBitcoin) BestOrder() (*data.Ask, *data.Bid, error) {
 	apiData, err := e.fetchApiData()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	if len(apiData.Asks) == 0 || len(apiData.Bids) == 0 {
-		return nil, nil
+		return nil, nil, nil
 	}
 
 	priceAsk, _ := strconv.ParseFloat(apiData.Asks[0][0], 64)
@@ -54,22 +56,23 @@ func (e *MercadoBitcoin) BestOrder() (*data.BestOrder, error) {
 
 	createdAt := time.Now()
 
-	bestAsk := &data.BestAsk{
+	ask := &data.Ask{
 		Price:     priceAsk,
 		Volume:    volumeAsk,
 		CreatedAt: createdAt,
 	}
 
-	bestBid := &data.BestBid{
+	bid := &data.Bid{
 		Price:     priceBid,
 		Volume:    volumeBid,
 		CreatedAt: createdAt,
 	}
 
-	return &data.BestOrder{
-		BestAsk: bestAsk,
-		BestBid: bestBid,
-	}, nil
+	return ask, bid, nil
+}
+
+func (e *MercadoBitcoin) ExchangeID() string {
+	return e.Id
 }
 
 type apiDataMB struct {

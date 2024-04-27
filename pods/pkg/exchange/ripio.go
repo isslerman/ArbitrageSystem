@@ -11,9 +11,9 @@ package exchange
 
 import (
 	"encoding/json"
-	"grpc-client/internal/data"
 	"io"
 	"net/http"
+	"pods/internal/data"
 	"time"
 )
 
@@ -36,10 +36,10 @@ func NewRipio() *Ripio {
 	}
 }
 
-func (e *Ripio) BestOrder() (*data.BestOrder, error) {
+func (e *Ripio) BestOrder() (*data.Ask, *data.Bid, error) {
 	apiData, err := e.fetchApiData()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	// fmt.Println("apidata:", apiData.Data.Asks)
 	var priceAsk, priceBid float64
@@ -74,36 +74,26 @@ func (e *Ripio) BestOrder() (*data.BestOrder, error) {
 
 	createdAt := time.Now()
 
-	bestAsk := &data.BestAsk{
+	ask := &data.Ask{
 		Price:     priceAsk,
 		PriceVET:  priceAskVET,
 		Volume:    volumeAsk,
 		CreatedAt: createdAt,
 	}
 
-	bestBid := &data.BestBid{
+	bid := &data.Bid{
 		Price:     priceBid,
 		PriceVET:  priceBidVET,
 		Volume:    volumeBid,
 		CreatedAt: createdAt,
 	}
 
-	return &data.BestOrder{
-		BestAsk: bestAsk,
-		BestBid: bestBid,
-	}, nil
+	return ask, bid, nil
 }
 
-// func (e *Ripio) BestBid() ([]float64, error) {
-// 	apiData, err := e.fetchApiData()
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	return []float64{
-// 		apiData.Data.Bids[0].Price,
-// 		apiData.Data.Bids[0].Amount,
-// 	}, nil
-// }
+func (e *Ripio) ExchangeID() string {
+	return e.Id
+}
 
 type orderRipio struct {
 	Amount float64 `json:"amount"`

@@ -2,27 +2,51 @@ package main
 
 import (
 	"flag"
-	"grpc-client/infra/api"
-	"grpc-client/pkg/exchanges"
-	"log"
+	"pods/infra/api"
+	"pods/pkg/exchange"
 )
+
+type config struct {
+	port int
+	env  string
+}
 
 type application struct {
 	Name    string
 	Version string
-	port    int
-	api     api.ApiService
+	config  config
+	apiSrv  api.Server
+	// infoLog  *log.Logger
+	// errorLog *log.Logger
+	// DB        repository.DatabaseRepo
+}
+
+func newApplication() *application {
+	app := &application{}
+	app.loadConfig()
+
+	return app
 }
 
 func main() {
-	var app application
+	// initiate our application
+	app := newApplication()
+
+	// create the exchange instance to be injected into the application
+	e := exchange.NewBinance()
+	// e := exchange.NewFoxbit()
+
+	// create apiSrv instance
+	apiSrv := api.NewServer(e, app.config.port)
+	app.apiSrv = apiSrv
+	app.apiSrv.StartServer()
+}
+
+func (app *application) loadConfig() {
+	app.config.env = "development"
+
 	flag.StringVar(&app.Name, "name", "Binance", "CEX Binance Exchange")
 	flag.StringVar(&app.Version, "version", "1.0.0", "Pod Version")
-	flag.IntVar(&app.port, "port", 15000, "Pod API port")
+	flag.IntVar(&app.config.port, "port", 15000, "Pod API port")
 	flag.Parse()
-
-	e := exchanges.NewBinance()
-	log.Printf("Starting api on port %d\n", app.port)
-	api := api.NewApiService(e, app.port)
-	api.StartServer()
 }

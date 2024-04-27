@@ -2,8 +2,8 @@ package main
 
 import (
 	"flag"
-	"grpc-client/infra/api"
-	"grpc-client/pkg/exchange"
+	"pods/infra/api"
+	"pods/pkg/exchange"
 )
 
 type config struct {
@@ -33,7 +33,7 @@ func main() {
 	app := newApplication()
 
 	// create the exchange instance to be injected into the application
-	e := exchange.NewBinance()
+	e := exchange.NewRipio()
 	// e := exchange.NewFoxbit()
 
 	// create apiSrv instance
@@ -45,8 +45,8 @@ func main() {
 func (app *application) loadConfig() {
 	app.config.env = "development"
 
-	flag.StringVar(&app.Name, "name", "Binance", "CEX Binance Exchange")
+	flag.StringVar(&app.Name, "name", "RIPI", "CEX Ripio Exchange")
 	flag.StringVar(&app.Version, "version", "1.0.0", "Pod Version")
-	flag.IntVar(&app.config.port, "port", 15000, "Pod API port")
+	flag.IntVar(&app.config.port, "port", 15001, "Pod API port")
 	flag.Parse()
 }

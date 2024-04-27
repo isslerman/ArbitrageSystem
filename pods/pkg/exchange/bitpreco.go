@@ -10,9 +10,9 @@ package exchange
 
 import (
 	"encoding/json"
-	"grpc-client/internal/data"
 	"io"
 	"net/http"
+	"pods/internal/data"
 	"time"
 )
 
@@ -35,10 +35,10 @@ func NewBitPreco() *BitPreco {
 	}
 }
 
-func (e *BitPreco) BestOrder() (*data.BestOrder, error) {
+func (e *BitPreco) BestOrder() (*data.Ask, *data.Bid, error) {
 	apiData, err := e.fetchApiData()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	var priceAsk float64
@@ -61,22 +61,19 @@ func (e *BitPreco) BestOrder() (*data.BestOrder, error) {
 
 	createdAt := time.Now()
 
-	bestAsk := &data.BestAsk{
+	ask := &data.Ask{
 		Price:     priceAsk,
 		Volume:    volumeAsk,
 		CreatedAt: createdAt,
 	}
 
-	bestBid := &data.BestBid{
+	bid := &data.Bid{
 		Price:     priceBid,
 		Volume:    volumeBid,
 		CreatedAt: createdAt,
 	}
 
-	return &data.BestOrder{
-		BestAsk: bestAsk,
-		BestBid: bestBid,
-	}, nil
+	return ask, bid, nil
 }
 
 type apiData struct {

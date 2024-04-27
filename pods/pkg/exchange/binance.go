@@ -8,9 +8,9 @@ package exchange
 
 import (
 	"encoding/json"
-	"grpc-client/internal/data"
 	"io"
 	"net/http"
+	"pods/internal/data"
 	"strconv"
 	"time"
 )
@@ -35,10 +35,10 @@ func NewBinance() *Binance {
 	}
 }
 
-func (e *Binance) BestOrder() (*data.BestOrder, error) {
+func (e *Binance) BestOrder() (*data.Ask, *data.Bid, error) {
 	apiData, err := e.fetchApiData()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	priceAsk, _ := strconv.ParseFloat(apiData.Asks[0][0], 64)
@@ -51,26 +51,29 @@ func (e *Binance) BestOrder() (*data.BestOrder, error) {
 
 	createdAt := time.Now()
 
-	bestAsk := &data.BestAsk{
+	ask := &data.Ask{
 		Price:     priceAsk,
 		PriceVET:  priceAskVET,
 		Volume:    volumeAsk,
 		CreatedAt: createdAt,
 	}
 
-	bestBid := &data.BestBid{
+	bid := &data.Bid{
 		Price:     priceBid,
 		PriceVET:  priceBidVET,
 		Volume:    volumeBid,
 		CreatedAt: createdAt,
 	}
 
-	return &data.BestOrder{
-		BestAsk: bestAsk,
-		BestBid: bestBid,
-	}, nil
+	return ask, bid, nil
 }
 
+func (e *Binance) ExchangeID() string {
+	return e.Id
+}
+
+// input data, only basic coming from external
+// needs to be validated and parsed to complex data
 type apiDataBinance struct {
 	Asks         [][]string `json:"asks"`
 	Bids         [][]string `json:"bids"`

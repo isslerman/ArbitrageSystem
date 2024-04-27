@@ -11,9 +11,9 @@ package exchange
 
 import (
 	"encoding/json"
-	"grpc-client/internal/data"
 	"io"
 	"net/http"
+	"pods/internal/data"
 	"strconv"
 	"time"
 )
@@ -37,7 +37,7 @@ func NewFoxbit() *Foxbit {
 	}
 }
 
-func (e *Foxbit) BestAsk() (*data.BestAsk, error) {
+func (e *Foxbit) BestAsk() (*data.Ask, error) {
 	apiData, err := e.fetchApiData()
 	if err != nil {
 		return nil, err
@@ -46,31 +46,31 @@ func (e *Foxbit) BestAsk() (*data.BestAsk, error) {
 	price, _ := strconv.ParseFloat(apiData.Asks[0][0], 64)
 	price = price * (1 + e.FeeTaker)
 	volume, _ := strconv.ParseFloat(apiData.Asks[0][1], 64)
-	return &data.BestAsk{
+	return &data.Ask{
 		Price:     price,
 		Volume:    volume,
 		CreatedAt: time.Now(),
 	}, nil
 }
 
-func (e *Foxbit) BestBid() (*data.BestBid, error) {
+func (e *Foxbit) BestBid() (*data.Bid, error) {
 	apiData, err := e.fetchApiData()
 	if err != nil {
 		return nil, err
 	}
 	price, _ := strconv.ParseFloat(apiData.Bids[0][0], 64)
 	volume, _ := strconv.ParseFloat(apiData.Bids[0][1], 64)
-	return &data.BestBid{
+	return &data.Bid{
 		Price:     price,
 		Volume:    volume,
 		CreatedAt: time.Now(),
 	}, nil
 }
 
-func (e *Foxbit) BestOrder() (*data.BestOrder, error) {
+func (e *Foxbit) BestOrder() (*data.Ask, *data.Bid, error) {
 	apiData, err := e.fetchApiData()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	priceAsk, _ := strconv.ParseFloat(apiData.Asks[0][0], 64)
@@ -83,22 +83,19 @@ func (e *Foxbit) BestOrder() (*data.BestOrder, error) {
 
 	createdAt := time.Now()
 
-	bestAsk := &data.BestAsk{
+	ask := &data.Ask{
 		Price:     priceAsk,
 		Volume:    volumeAsk,
 		CreatedAt: createdAt,
 	}
 
-	bestBid := &data.BestBid{
+	bid := &data.Bid{
 		Price:     priceBid,
 		Volume:    volumeBid,
 		CreatedAt: createdAt,
 	}
 
-	return &data.BestOrder{
-		BestAsk: bestAsk,
-		BestBid: bestBid,
-	}, nil
+	return ask, bid, nil
 }
 
 type apiDataFoxBit struct {
