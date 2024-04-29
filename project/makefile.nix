@@ -65,31 +65,31 @@ build-all: build-pod-BINA build-pod-BITP build-pod-FOXB build-pod-MBTC build-pod
 ## build-pod-BINA: builds the pod binary as a macos executable
 build-pod-BINA:
 	@echo "Building pod BINA binary..."
-	cd ../pods && env GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -o ./bin/${POD_BINA_BINARY} ./cmd/client-BINA
+	cd ../pods && env GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o ./bin/${POD_BINA_BINARY} ./cmd/client-BINA
 	@echo "Done!"
 
 ## build-pod-BITP: builds the pod binary as a macos executable
 build-pod-BITP:
 	@echo "Building pod BITP binary..."
-	cd ../pods && env GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -o ./bin/${POD_BITP_BINARY} ./cmd/client-BITP
+	cd ../pods && env GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o ./bin/${POD_BITP_BINARY} ./cmd/client-BITP
 	@echo "Done!"
 
 ## build-pod-MBTC: builds the pod binary as a macos executable
 build-pod-MBTC:
 	@echo "Building pod MBTC binary..."
-	cd ../pods && env GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -o ./bin/${POD_MBTC_BINARY} ./cmd/client-MBTC
+	cd ../pods && env GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o ./bin/${POD_MBTC_BINARY} ./cmd/client-MBTC
 	@echo "Done!"
 
 ## build-pod-FOXB: builds the pod binary as a macos executable
 build-pod-FOXB:
 	@echo "Building pod FOXB binary..."
-	cd ../pods && env GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -o ./bin/${POD_FOXB_BINARY} ./cmd/client-FOXB
+	cd ../pods && env GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o ./bin/${POD_FOXB_BINARY} ./cmd/client-FOXB
 	@echo "Done!"
 
 ## build-pod-RIPI: builds the pod binary as a macos executable
 build-pod-RIPI:
 	@echo "Building pod RIPI binary..."
-	cd ../pods && env GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -o ./bin/${POD_RIPI_BINARY} ./cmd/client-RIPI
+	cd ../pods && env GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o ./bin/${POD_RIPI_BINARY} ./cmd/client-RIPI
 	@echo "Done!"
 
 
@@ -99,7 +99,7 @@ build-pod-RIPI:
 ## build_server: build gRPC server
 build-server:
 	@echo "Building gRPC server..."
-	cd ../grpc-server && env GOOS=linux GOARCH=arm64 CGO_ENABLED=1 go build -o ./bin/${GRPC_SERVER_BINARY} ./cmd/api
+	cd ../grpc-server && env GOOS=linux GOARCH=amd64 CGO_ENABLED=1 go build -o ./bin/${GRPC_SERVER_BINARY} ./cmd/api
 	@echo "Done!"
 
 ## start: start gRPC server
