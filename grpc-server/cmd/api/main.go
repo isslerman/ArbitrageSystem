@@ -1,9 +1,13 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"grpc-server/data"
+	"grpc-server/infra/database"
 	"time"
+
+	_ "github.com/mattn/go-sqlite3"
 )
 
 const (
@@ -11,26 +15,31 @@ const (
 )
 
 type Config struct {
-	Models data.Models
+	IorderHistoryRepo IOrderHistoryRepo
+}
+
+type IOrderHistoryRepo interface {
+	Save(spread float64, ask *data.AskOrder, bid *data.BidOrder, createdAt string) (string, error)
 }
 
 func main() {
 	app := Config{}
+
+	//sqlite db
+	db, err := sql.Open("sqlite3", "./db.sqlite")
+	if err != nil {
+		panic(err)
+	}
+	defer db.Close()
+
+	app.IorderHistoryRepo = database.NewOrderHistory(db)
 
 	// Register the gRPC Server
 	srv := NewOrderServer()
 	go app.gRPCListen(srv)
 	ob := srv.Models.OrderBook
 
-	// ctx, cancel := context.WithCancel(context.Background())
-	// defer cancel()
-	// go removeOldAsks(ob, ctx)
-	// go removeOldBids(ob, ctx)
 	app.bestOrder(ob)
-
-	// TBD clean interrupt
-	// c := make(chan os.Signal, 1)
-	// signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 }
 
 func (app *Config) bestOrder(ob *data.OrderBook) {
@@ -51,6 +60,26 @@ func (app *Config) bestOrder(ob *data.OrderBook) {
 			// } else {
 			// 	// fmt.Printf("OB, low,%.2f , ASK[%s], %f, %f, BID[%s], %f, %f, time,%s\n", spread, ba.ID, ba.Price, ba.Volume, bb.ID, bb.Price, bb.Volume, ba.CreatedAtTime())
 			// }
+
+			aho := &data.AskOrder{
+				ExcID:    ba.ID,
+				Price:    ba.Price,
+				PriceVET: ba.PriceVET,
+				Volume:   ba.Volume,
+			}
+			bho := &data.BidOrder{
+				ExcID:    bb.ID,
+				Price:    bb.Price,
+				PriceVET: bb.PriceVET,
+				Volume:   bb.Volume,
+			}
+			id, err := app.IorderHistoryRepo.Save(spread, aho, bho, ba.CreatedAtTime())
+			if err != nil {
+				fmt.Printf("Error saving to DB: %v", err)
+			}
+
+			fmt.Printf("Saved to DB: [%s]\n", id)
+
 		}
 		// Housekeeping
 		ob.RemoveExpiredAsks()

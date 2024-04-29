@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/http/httptest"
 
 	"pods/internal/pod"
 	"pods/pkg/toolbox"
@@ -55,6 +56,11 @@ func (api *Server) Routes() http.Handler {
 
 	mux.HandleFunc("/start", api.StartPod)
 	mux.HandleFunc("/stop", api.StopPod)
+
+	// auto-start request
+	rw := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/start", nil)
+	api.StartPod(rw, req)
 
 	return mux
 }

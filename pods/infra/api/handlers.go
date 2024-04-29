@@ -48,9 +48,12 @@ func (api *Server) runPod(stopChan <-chan bool) {
 			fmt.Println("We must stop...")
 			return
 		default:
-			fmt.Println("Running...")
+			// fmt.Println("Running...")
 			// run the pod
-			pod.Run()
+			err := pod.Run()
+			if err != nil {
+				fmt.Println("error:", err)
+			}
 
 			time.Sleep(time.Second * 1)
 		}

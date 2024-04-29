@@ -47,6 +47,6 @@ func (app *application) loadConfig() {
 
 	flag.StringVar(&app.Name, "name", "RIPI", "CEX Ripio Exchange")
 	flag.StringVar(&app.Version, "version", "1.0.0", "Pod Version")
-	flag.IntVar(&app.config.port, "port", 15001, "Pod API port")
+	flag.IntVar(&app.config.port, "port", 15004, "Pod API port")
 	flag.Parse()
 }

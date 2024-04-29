@@ -46,6 +46,6 @@ func (app *application) loadConfig() {
 
 	flag.StringVar(&app.Name, "name", "MERB", "CEX Mercado Bitcoin Exchange")
 	flag.StringVar(&app.Version, "version", "1.0.0", "Pod Version")
-	flag.IntVar(&app.config.port, "port", 15002, "Pod API port")
+	flag.IntVar(&app.config.port, "port", 15003, "Pod API port")
 	flag.Parse()
 }

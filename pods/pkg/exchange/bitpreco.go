@@ -42,10 +42,11 @@ func (e *BitPreco) BestOrder() (*data.Ask, *data.Bid, error) {
 	}
 
 	var priceAsk float64
+	var priceAskVET float64
 	var volumeAsk float64
 	for i := 0; i < 5; i++ {
 		priceAsk = apiData.Asks[0].Price
-		priceAsk = priceAsk * (1 + e.FeeTaker)
+		priceAskVET = priceAsk * (1 + e.FeeTaker)
 		volumeAsk = apiData.Asks[0].Amount
 		// test if order < minOrder
 		// better to implement a medium price of agg orders
@@ -53,27 +54,42 @@ func (e *BitPreco) BestOrder() (*data.Ask, *data.Bid, error) {
 			break
 		}
 	}
-	// fmt.Printf("DEBUG: priceAsk %f, vol %.2f\n", priceAsk, volumeAsk)
 
-	priceBid := apiData.Bids[0].Price
-	priceBid = priceBid * (1 - e.FeeTaker)
-	volumeBid := apiData.Bids[0].Amount
+	var priceBid float64
+	var priceBidVET float64
+	var volumeBid float64
+	for i := 0; i < 5; i++ {
+		priceBid = apiData.Bids[0].Price
+		priceBidVET = priceBid * (1 + e.FeeTaker)
+		volumeBid = apiData.Bids[0].Amount
+		// test if order < minOrder
+		// better to implement a medium price of agg orders
+		if priceBid*volumeBid > 10 {
+			break
+		}
+	}
 
 	createdAt := time.Now()
 
 	ask := &data.Ask{
 		Price:     priceAsk,
+		PriceVET:  priceAskVET,
 		Volume:    volumeAsk,
 		CreatedAt: createdAt,
 	}
 
 	bid := &data.Bid{
 		Price:     priceBid,
+		PriceVET:  priceBidVET,
 		Volume:    volumeBid,
 		CreatedAt: createdAt,
 	}
 
 	return ask, bid, nil
+}
+
+func (e *BitPreco) ExchangeID() string {
+	return e.Id
 }
 
 type apiData struct {

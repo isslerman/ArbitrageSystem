@@ -3,6 +3,8 @@ module grpc-server
 go 1.21.6
 
 require (
+	github.com/google/uuid v1.6.0
+	github.com/mattn/go-sqlite3 v1.14.22
 	google.golang.org/grpc v1.62.1
 	google.golang.org/protobuf v1.32.0
 )

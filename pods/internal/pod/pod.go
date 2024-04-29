@@ -7,6 +7,7 @@
 package pod
 
 import (
+	"errors"
 	"fmt"
 	"pods/infra/grpc"
 	"pods/internal/data"
@@ -31,18 +32,43 @@ func NewPod(e exchange.IExchange) *Pod {
 	}
 }
 
+var (
+	ErrAskZeroVolume     = errors.New("ask volume zero")
+	ErrBidZeroVolume     = errors.New("bid volume zero")
+	ErrfetchBestOrderNil = errors.New("fetching best order returning nil")
+)
+
 // Run() fetch the data from the Iexchange one time
 func (pod *Pod) Run() error {
 	// check if exchange if nil
 	// fetchExchange
 	// here we need to have all data, before filter
-	ask, bid := pod.fetchBestOrder()
+	ask, bid, err := pod.fetchBestOrder()
+
 	// validate - pod is the man with the bus rules
 	// has volume?
 	// has the min that attend?
 	// here we now that the data comming from input is validated
+	// insert this into validation
+	if err != nil {
+		fmt.Printf("Error: %v", ErrfetchBestOrderNil)
+		return nil
+	}
+
+	if (ask == nil) || (bid == nil) {
+		fmt.Printf("Error: %v", ErrfetchBestOrderNil)
+		return nil
+	}
 	// we are in the bus/first class
 	pod.orderbook = data.NewOrderBook(ask, bid)
+
+	if pod.orderbook.Ask.Volume == 0 {
+		return ErrAskZeroVolume
+	}
+
+	if pod.orderbook.Bid.Volume == 0 {
+		return ErrBidZeroVolume
+	}
 
 	// orderbook.validate.rules
 	// if something... only 3 orders
@@ -54,13 +80,17 @@ func (pod *Pod) Run() error {
 	return nil
 }
 
-func (pod *Pod) fetchBestOrder() (*data.Ask, *data.Bid) {
+func (pod *Pod) fetchBestOrder() (*data.Ask, *data.Bid, error) {
 	// fmt.Println("Pod.fetchBestOrder()")
 	// we are using the interface, the exchange was choosen in the main.go
 	// fetch the data from the exchange
-	ask, bid, _ := pod.exchange.BestOrder()
+	ask, bid, err := pod.exchange.BestOrder()
+	if err != nil {
+		return nil, nil, err
+	}
+
 	// insert into order data bus layer
-	return ask, bid
+	return ask, bid, nil
 }
 
 func (pod *Pod) sendBestOrderViaGRPC() {
@@ -70,6 +100,7 @@ func (pod *Pod) sendBestOrderViaGRPC() {
 		Id:        pod.exchange.ExchangeID(),
 		Price:     pod.orderbook.Ask.Price,
 		PriceVET:  pod.orderbook.Ask.PriceVET,
+		Volume:    pod.orderbook.Ask.Volume,
 		CreatedAt: pod.orderbook.Ask.CreatedAt.Unix(),
 	}
 
@@ -77,10 +108,11 @@ func (pod *Pod) sendBestOrderViaGRPC() {
 		Id:        pod.exchange.ExchangeID(),
 		Price:     pod.orderbook.Bid.Price,
 		PriceVET:  pod.orderbook.Bid.PriceVET,
+		Volume:    pod.orderbook.Bid.Volume,
 		CreatedAt: pod.orderbook.Bid.CreatedAt.Unix(),
 	}
 	// send msg over grpc
-	fmt.Printf("send: %v, %v\n", oa, ob)
+	fmt.Printf("send: ask %v, %v\n", oa, ob)
 	pod.conn.SendViaGRPC(oa, ob)
 }
 

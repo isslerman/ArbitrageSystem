@@ -47,23 +47,25 @@ func (e *MercadoBitcoin) BestOrder() (*data.Ask, *data.Bid, error) {
 	}
 
 	priceAsk, _ := strconv.ParseFloat(apiData.Asks[0][0], 64)
-	priceAsk = priceAsk * (1 + e.FeeTaker)
+	priceAskVET := priceAsk * (1 + e.FeeTaker)
 	volumeAsk, _ := strconv.ParseFloat(apiData.Asks[0][1], 64)
 
 	priceBid, _ := strconv.ParseFloat(apiData.Bids[0][0], 64)
-	priceBid = priceBid * (1 - e.FeeTaker)
+	priceBidVET := priceBid * (1 - e.FeeTaker)
 	volumeBid, _ := strconv.ParseFloat(apiData.Bids[0][1], 64)
 
 	createdAt := time.Now()
 
 	ask := &data.Ask{
 		Price:     priceAsk,
+		PriceVET:  priceAskVET,
 		Volume:    volumeAsk,
 		CreatedAt: createdAt,
 	}
 
 	bid := &data.Bid{
 		Price:     priceBid,
+		PriceVET:  priceBidVET,
 		Volume:    volumeBid,
 		CreatedAt: createdAt,
 	}
