@@ -22,7 +22,7 @@ func NewOrder(id string, price, priceVET, volume float64, createdAt int64) *Orde
 	}
 }
 
-func (o *Order) CreatedAtTime() string {
+func (o *Order) CreatedAtHuman() string {
 	t := time.Unix(o.CreatedAt, 0)
 	strDate := t.Format(time.UnixDate)
 	return strDate

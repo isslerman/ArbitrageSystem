@@ -20,9 +20,9 @@ func NewOrderHistory(db *sql.DB) *OrderHistoryRepo {
 	return &OrderHistoryRepo{db: db}
 }
 
-func (c *OrderHistoryRepo) Save(spread float64, ask *data.AskOrder, bid *data.BidOrder, createdAt string) (string, error) {
+func (c *OrderHistoryRepo) Save(spread float64, ask *data.AskOrder, bid *data.BidOrder, createdAt int64) (string, error) {
 	id := uuid.New().String()
-	_, err := c.db.Exec(`INSERT INTO OrderHistoryLog (id, spread, aexcid, aprice, apricevet, avolume, bexcid, bprice, bpricevet, bvolume, createdAt) 
+	_, err := c.db.Exec(`INSERT INTO orderHistory (id, spread, aexcid, aprice, apricevet, avolume, bexcid, bprice, bpricevet, bvolume, created_at) 
     VALUES (
         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11
     )`,

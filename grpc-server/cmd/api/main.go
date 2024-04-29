@@ -1,10 +1,11 @@
 package main
 
 import (
-	"database/sql"
+	"flag"
 	"fmt"
 	"grpc-server/data"
 	"grpc-server/infra/database"
+	"log"
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -16,23 +17,27 @@ const (
 
 type Config struct {
 	IorderHistoryRepo IOrderHistoryRepo
+	DSN               string
 }
 
 type IOrderHistoryRepo interface {
-	Save(spread float64, ask *data.AskOrder, bid *data.BidOrder, createdAt string) (string, error)
+	Save(spread float64, ask *data.AskOrder, bid *data.BidOrder, createdAt int64) (string, error)
 }
 
 func main() {
 	app := Config{}
 
-	//sqlite db
-	db, err := sql.Open("sqlite3", "./db.sqlite")
-	if err != nil {
-		panic(err)
-	}
-	defer db.Close()
+	flag.StringVar(&app.DSN, "dsn", "host=192.168.15.14 port=5432 user=root password=root dbname=arbitrage-system sslmode=disable timezone=UTC connect_timeout=5", "Posgtres connection")
+	flag.Parse()
 
-	app.IorderHistoryRepo = database.NewOrderHistory(db)
+	//postgre db
+	conn, err := app.connectToDB()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer conn.Close()
+
+	app.IorderHistoryRepo = database.NewOrderHistory(conn)
 
 	// Register the gRPC Server
 	srv := NewOrderServer()
@@ -51,11 +56,19 @@ func (app *Config) bestOrder(ob *data.OrderBook) {
 			ba := ob.BestAsk()
 			bb := ob.BestBid()
 			spread := (1 - (ba.PriceVET / bb.PriceVET)) * 100
+			createdAt := time.Now().Unix()
 			// if spread > 0.0 {
 			fmt.Printf("Order, good,%.2f ,", spread)
 			fmt.Printf("ASK[%s], %f, %f, %f, ", ba.ID, ba.Price, ba.PriceVET, ba.Volume)
 			fmt.Printf("BID[%s], %f, %f, %f, ", bb.ID, bb.Price, bb.PriceVET, bb.Volume)
-			fmt.Printf("time,%s\n", ba.CreatedAtTime())
+			fmt.Printf("time,%s\n", ba.CreatedAtHuman())
+
+			// How will be our orders
+			if ba.Volume < bb.Volume {
+				fmt.Printf("Buy [%f]-[%f] at [%f] from %s, and Sell [%f]-[%f] at [%f] from %s\n", ba.Volume, (ba.Volume * ba.Price), ba.Price, ba.ID, bb.Volume, (bb.Volume * bb.Price), bb.Price, bb.ID)
+			} else {
+				fmt.Printf("Buy [%f]-[%f] at [%f] from %s, and Sell [%f]-[%f] at [%f] from %s\n", bb.Volume, (bb.Volume * bb.Price), bb.Price, bb.ID, ba.Volume, (ba.Volume * ba.Price), ba.Price, ba.ID)
+			}
 			// }
 			// } else {
 			// 	// fmt.Printf("OB, low,%.2f , ASK[%s], %f, %f, BID[%s], %f, %f, time,%s\n", spread, ba.ID, ba.Price, ba.Volume, bb.ID, bb.Price, bb.Volume, ba.CreatedAtTime())
@@ -73,12 +86,13 @@ func (app *Config) bestOrder(ob *data.OrderBook) {
 				PriceVET: bb.PriceVET,
 				Volume:   bb.Volume,
 			}
-			id, err := app.IorderHistoryRepo.Save(spread, aho, bho, ba.CreatedAtTime())
+
+			_, err := app.IorderHistoryRepo.Save(spread, aho, bho, createdAt)
 			if err != nil {
 				fmt.Printf("Error saving to DB: %v", err)
 			}
 
-			fmt.Printf("Saved to DB: [%s]\n", id)
+			// fmt.Printf("Saved to DB: [%s]\n", id)
 
 		}
 		// Housekeeping
