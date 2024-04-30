@@ -1,23 +1,29 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"grpc-server/data"
 	"grpc-server/infra/database"
+	"grpc-server/infra/ntfy"
 	"log"
+	"log/slog"
+	"os"
 	"time"
-
-	_ "github.com/mattn/go-sqlite3"
 )
 
-const (
-	gRpcPort = "50001"
+var (
+	ErrBadRequest = errors.New("bad request")
+	ErrNotfound   = errors.New("not found")
 )
 
 type Config struct {
 	IorderHistoryRepo IOrderHistoryRepo
 	DSN               string
+	gRpcPort          string
+	Logger            slog.Logger
+	Notify            *ntfy.Ntfy
 }
 
 type IOrderHistoryRepo interface {
@@ -25,9 +31,14 @@ type IOrderHistoryRepo interface {
 }
 
 func main() {
+	// configure slog
+
 	app := Config{}
+	app.setupLogger()
+	app.setupNotifyService()
 
 	flag.StringVar(&app.DSN, "dsn", "host=192.168.15.14 port=5432 user=root password=root dbname=arbitrage-system sslmode=disable timezone=UTC connect_timeout=5", "Posgtres connection")
+	flag.StringVar(&app.gRpcPort, "grpcPort", "50001", "gRPC Port Server Port")
 	flag.Parse()
 
 	//postgre db
@@ -63,17 +74,9 @@ func (app *Config) bestOrder(ob *data.OrderBook) {
 			fmt.Printf("BID[%s], %f, %f, %f, ", bb.ID, bb.Price, bb.PriceVET, bb.Volume)
 			fmt.Printf("time,%s\n", ba.CreatedAtHuman())
 
-			// How will be our orders
-			if ba.Volume < bb.Volume {
-				fmt.Printf("Buy [%f]-[%f] at [%f] from %s, and Sell [%f]-[%f] at [%f] from %s\n", ba.Volume, (ba.Volume * ba.Price), ba.Price, ba.ID, bb.Volume, (bb.Volume * bb.Price), bb.Price, bb.ID)
-			} else {
-				fmt.Printf("Buy [%f]-[%f] at [%f] from %s, and Sell [%f]-[%f] at [%f] from %s\n", bb.Volume, (bb.Volume * bb.Price), bb.Price, bb.ID, ba.Volume, (ba.Volume * ba.Price), ba.Price, ba.ID)
+			if spread > 0.4 {
+				app.execOrder(ba, bb, spread)
 			}
-			// }
-			// } else {
-			// 	// fmt.Printf("OB, low,%.2f , ASK[%s], %f, %f, BID[%s], %f, %f, time,%s\n", spread, ba.ID, ba.Price, ba.Volume, bb.ID, bb.Price, bb.Volume, ba.CreatedAtTime())
-			// }
-
 			aho := &data.AskOrder{
 				ExcID:    ba.ID,
 				Price:    ba.Price,
@@ -89,7 +92,7 @@ func (app *Config) bestOrder(ob *data.OrderBook) {
 
 			_, err := app.IorderHistoryRepo.Save(spread, aho, bho, createdAt)
 			if err != nil {
-				fmt.Printf("Error saving to DB: %v", err)
+				slog.Error("error saving to DB:", err)
 			}
 
 			// fmt.Printf("Saved to DB: [%s]\n", id)
@@ -105,4 +108,25 @@ func (app *Config) bestOrder(ob *data.OrderBook) {
 		// fmt.Printf("OB: [%d] orders\n", ob.SizeAsk())
 		// fmt.Printf("OB: [%d] orders\n", ob.SizeAsk())
 	}
+}
+
+func (app *Config) execOrder(ba, bb *data.Order, spread float64) {
+	// How much volume have avaiable
+	// if ba.Volume < bb.Volume {
+	// 	slog.Info("Buy [%f]-[%f] at [%f] from %s, and Sell [%f]-[%f] at [%f] from %s\n", ba.Volume, (ba.Volume * ba.Price), ba.Price, ba.ID, bb.Volume, (bb.Volume * bb.Price), bb.Price, bb.ID)
+	// } else {
+	// 	slog.Info("Buy [%f]-[%f] at [%f] from %s, and Sell [%f]-[%f] at [%f] from %s\n", bb.Volume, (bb.Volume * bb.Price), bb.Price, bb.ID, ba.Volume, (ba.Volume * ba.Price), ba.Price, ba.ID)
+	// }
+
+}
+
+func (app *Config) setupLogger() {
+
+	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+	slog.SetDefault(logger) // Updates slogs default instance of slog with our own handler.
+
+}
+
+func (app *Config) setupNotifyService() {
+	app.Notify = ntfy.NewNtfy()
 }

@@ -43,8 +43,14 @@ ToDo:
 - How to know if any pod stopped
 - How to know if any pod is giving any error?
 - Create a dockerfile with metabase ? stay at our notebook or let's go to our server? 
+- How much is the balance in each wallet?
+- How much we have earned each day?
+- Possible new tokens: Fetch.AI, Filecoin (Foxbit)
 
 
+--------
+PODS - PORTS USED
+--------
 15000 - BINA
 15001 - BITP
 15002 - FOXB

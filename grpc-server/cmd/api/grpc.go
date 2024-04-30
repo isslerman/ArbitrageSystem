@@ -60,7 +60,7 @@ func (o *OrderServer) WriteOrder(ctx context.Context, req *orders.OrderRequest) 
 
 func (app *Config) gRPCListen(os *OrderServer) {
 	// grpc server listeing on a tcp port
-	lis, err := net.Listen("tcp", fmt.Sprintf(":%s", gRpcPort))
+	lis, err := net.Listen("tcp", fmt.Sprintf(":%s", app.gRpcPort))
 	if err != nil {
 		log.Fatalf("Failed to listen for gRPC: %v", err)
 	}
