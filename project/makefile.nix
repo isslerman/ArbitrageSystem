@@ -105,7 +105,7 @@ build-server:
 ## start: start gRPC server
 start-server: 
 	@echo "Starting gRPC server"
-	cd ../grpc-server/bin && ./${GRPC_SERVER_BINARY}
+	cd ../grpc-server/bin && ./${GRPC_SERVER_BINARY} &
 	@echo "Done!"
 
 ## stop: stop the gRPC server
