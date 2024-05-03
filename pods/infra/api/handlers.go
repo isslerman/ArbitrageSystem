@@ -66,13 +66,13 @@ type OrderPayload struct {
 	Volume float64
 }
 type status struct {
-	Status string `json:"status"`
+	Status bool `json:"status"`
 }
 
 func (api *Server) Status(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Status ping")
 	status := &status{
-		Status: "ok",
+		Status: api.isRunning,
 	}
 	_ = api.tb.WriteJSON(w, http.StatusOK, status)
 }

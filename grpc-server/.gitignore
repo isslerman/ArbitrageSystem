@@ -17,3 +17,4 @@
 go.work
 ## binaries
 bin/
+.env
