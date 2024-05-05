@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"pods/infra/api"
 	"pods/pkg/exchange"
 	"pods/pkg/logger"
@@ -51,4 +52,6 @@ func (app *application) loadConfig() {
 	flag.Parse()
 
 	app.l = logger.Get(app.Name)
+	app.l.Info("logging files info",
+		zap.String("dir", fmt.Sprintf("logs/%s.log", app.Name)))
 }
