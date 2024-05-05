@@ -41,7 +41,6 @@ func (e *Ripio) BestOrder() (*data.Ask, *data.Bid, error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	// fmt.Println("apidata:", apiData.Data.Asks)
 	var priceAsk, priceBid float64
 	var priceAskVET, priceBidVET float64
 	var volumeAsk, volumeBid float64

@@ -24,13 +24,14 @@ type Pod struct {
 	orderbook *data.Orderbook
 	// msgService *infra.IMsgService
 	conn *grpc.Config // create grpc instance
-
+	l    *zap.Logger
 }
 
 func NewPod(e exchange.IExchange, l *zap.Logger) *Pod {
 	return &Pod{
 		exchange: e,
 		conn:     grpc.NewServiceGRPC(l),
+		l:        l,
 	}
 }
 
@@ -114,8 +115,22 @@ func (pod *Pod) sendBestOrderViaGRPC() {
 		CreatedAt: pod.orderbook.Bid.CreatedAt.Unix(),
 	}
 	// send msg over grpc
-	fmt.Printf("send: ask %v, %v\n", oa, ob)
 	pod.conn.SendViaGRPC(oa, ob)
+
+	// logging to debug pods
+	// can be a routine?
+	pod.l.Info("Sending best ask and bid order",
+		zap.String("aid", oa.Id),
+		zap.Float64("aPrice", oa.Price),
+		zap.Float64("aPriceVET", oa.PriceVET),
+		zap.Float64("aVolume", oa.Volume),
+		zap.String("aCreatedAt", pod.orderbook.Ask.CreatedAt.String()),
+		zap.String("bid", ob.Id),
+		zap.Float64("bPrice", ob.Price),
+		zap.Float64("bPriceVET", ob.PriceVET),
+		zap.Float64("bVolume", ob.Volume),
+		zap.String("bCreatedAt", pod.orderbook.Bid.CreatedAt.String()),
+	)
 }
 
 // type inputData struct {

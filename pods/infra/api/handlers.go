@@ -1,7 +1,6 @@
 package api
 
 import (
-	"fmt"
 	"pods/internal/pod"
 
 	"net/http"
@@ -11,9 +10,9 @@ import (
 )
 
 func (api *Server) StartPod(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("Starting Pod")
+	api.l.Info("Starting Pod")
+
 	if api.isRunning {
-		fmt.Println("Pod already running")
 		w.Write([]byte("Pod already running"))
 		return
 	}
@@ -25,9 +24,8 @@ func (api *Server) StartPod(w http.ResponseWriter, r *http.Request) {
 }
 
 func (api *Server) StopPod(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("Stoping Pod")
+	api.l.Info("Stoping Pod")
 	if !api.isRunning {
-		fmt.Println("Pod already stopped")
 		w.Write([]byte("Pod already stopped"))
 		return
 	}
@@ -36,7 +34,7 @@ func (api *Server) StopPod(w http.ResponseWriter, r *http.Request) {
 	api.isRunning = false
 
 	w.Write([]byte("Pod stopped"))
-	fmt.Println("Pod stopped")
+	api.l.Info("Pod stopped")
 }
 
 func (api *Server) runPod(stopChan <-chan bool) {
@@ -46,15 +44,12 @@ func (api *Server) runPod(stopChan <-chan bool) {
 		select {
 		case <-stopChan:
 			api.l.Info("We must stop")
-			// fmt.Println("We must stop...")
 			return
 		default:
-			// fmt.Println("Running...")
 			// run the pod
 			err := pod.Run()
 			if err != nil {
 				api.l.Error("error running pod", zap.Error(err))
-				fmt.Println("error:", err)
 			}
 
 			time.Sleep(time.Second * 1)
@@ -72,7 +67,7 @@ type status struct {
 }
 
 func (api *Server) Status(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("Status ping")
+	api.l.Info("Handler Status")
 	status := &status{
 		Status: api.isRunning,
 	}

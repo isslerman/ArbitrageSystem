@@ -97,6 +97,7 @@ func (e *Binance) fetchApiData() (*apiDataBinance, error) {
 	if err != nil {
 		return nil, err
 	}
+	// How to implement zap log here?
 	// fmt.Printf("DEBUG: [%s,%s]", d.Asks[0][0], d.Asks[0][1])
 	return &d, nil
 }
