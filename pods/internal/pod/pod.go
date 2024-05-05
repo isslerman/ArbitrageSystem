@@ -13,6 +13,8 @@ import (
 	"pods/internal/data"
 	"pods/internal/pb/orders"
 	"pods/pkg/exchange"
+
+	"go.uber.org/zap"
 )
 
 // type OrderMsg *orders.Order
@@ -25,10 +27,10 @@ type Pod struct {
 
 }
 
-func NewPod(e exchange.IExchange) *Pod {
+func NewPod(e exchange.IExchange, l *zap.Logger) *Pod {
 	return &Pod{
 		exchange: e,
-		conn:     grpc.NewServiceGRPC(),
+		conn:     grpc.NewServiceGRPC(l),
 	}
 }
 

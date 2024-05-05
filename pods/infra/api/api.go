@@ -15,6 +15,7 @@ import (
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
+	"go.uber.org/zap"
 )
 
 type Server struct {
@@ -24,16 +25,18 @@ type Server struct {
 	exchange  exchange.IExchange
 	port      int
 	pod       *pod.Pod
+	l         *zap.Logger
 }
 
 // NewServer initializes a new Server
-func NewServer(e exchange.IExchange, port int) Server {
+func NewServer(e exchange.IExchange, port int, l *zap.Logger) Server {
 	return Server{
 		tb:       toolbox.New(),   // toolbox utilities
 		stopCh:   make(chan bool), // channel to help with start/stop goroutine
 		exchange: e,
 		port:     port,
 		pod:      nil,
+		l:        l,
 		// app config?
 		// log is part of the app or the api service? R: App
 	}

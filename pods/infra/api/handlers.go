@@ -6,6 +6,8 @@ import (
 
 	"net/http"
 	"time"
+
+	"go.uber.org/zap"
 )
 
 func (api *Server) StartPod(w http.ResponseWriter, r *http.Request) {
@@ -19,7 +21,7 @@ func (api *Server) StartPod(w http.ResponseWriter, r *http.Request) {
 	api.isRunning = true
 
 	w.Write([]byte("Pod started"))
-	fmt.Println("leaving StartPod Func")
+	api.l.Info("Pod started")
 }
 
 func (api *Server) StopPod(w http.ResponseWriter, r *http.Request) {
@@ -38,20 +40,20 @@ func (api *Server) StopPod(w http.ResponseWriter, r *http.Request) {
 }
 
 func (api *Server) runPod(stopChan <-chan bool) {
-	fmt.Println("I am doing somethin here.")
-
-	pod := pod.NewPod(api.exchange)
+	pod := pod.NewPod(api.exchange, api.l)
 
 	for {
 		select {
 		case <-stopChan:
-			fmt.Println("We must stop...")
+			api.l.Info("We must stop")
+			// fmt.Println("We must stop...")
 			return
 		default:
 			// fmt.Println("Running...")
 			// run the pod
 			err := pod.Run()
 			if err != nil {
+				api.l.Error("error running pod", zap.Error(err))
 				fmt.Println("error:", err)
 			}
 

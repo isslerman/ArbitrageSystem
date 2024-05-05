@@ -4,6 +4,9 @@ import (
 	"flag"
 	"pods/infra/api"
 	"pods/pkg/exchange"
+	"pods/pkg/logger"
+
+	"go.uber.org/zap"
 )
 
 type config struct {
@@ -16,9 +19,7 @@ type application struct {
 	Version string
 	config  config
 	apiSrv  api.Server
-	// infoLog  *log.Logger
-	// errorLog *log.Logger
-	// DB        repository.DatabaseRepo
+	l       *zap.Logger
 }
 
 func newApplication() *application {
@@ -34,10 +35,9 @@ func main() {
 
 	// create the exchange instance to be injected into the application
 	e := exchange.NewRipio()
-	// e := exchange.NewFoxbit()
 
 	// create apiSrv instance
-	apiSrv := api.NewServer(e, app.config.port)
+	apiSrv := api.NewServer(e, app.config.port, app.l)
 	app.apiSrv = apiSrv
 	app.apiSrv.StartServer()
 }
@@ -49,4 +49,6 @@ func (app *application) loadConfig() {
 	flag.StringVar(&app.Version, "version", "1.0.0", "Pod Version")
 	flag.IntVar(&app.config.port, "port", 15004, "Pod API port")
 	flag.Parse()
+
+	app.l = logger.Get(app.Name)
 }

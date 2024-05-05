@@ -10,6 +10,7 @@ import (
 	"pods/internal/pb/orders"
 	"time"
 
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -19,9 +20,10 @@ type Config struct {
 	host string
 	port int
 	Conn *grpc.ClientConn
+	l    *zap.Logger
 }
 
-func NewServiceGRPC() *Config {
+func NewServiceGRPC(l *zap.Logger) *Config {
 	app := Config{
 		host: "localhost",
 		port: 50001,
