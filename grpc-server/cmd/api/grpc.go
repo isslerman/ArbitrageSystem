@@ -58,7 +58,7 @@ func (o *OrderServer) WriteOrder(ctx context.Context, req *orders.OrderRequest) 
 	return res, nil
 }
 
-func (app *Config) gRPCListen(os *OrderServer) {
+func (app *App) gRPCListen(os *OrderServer) {
 	// grpc server listeing on a tcp port
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%s", app.gRpcPort))
 	if err != nil {

@@ -9,7 +9,6 @@ import (
 	"grpc-server/infra/ntfy"
 	"log"
 	"log/slog"
-	"os"
 	"time"
 )
 
@@ -18,26 +17,41 @@ var (
 	ErrNotfound   = errors.New("not found")
 )
 
-type Config struct {
+type App struct {
 	IorderHistoryRepo IOrderHistoryRepo
 	DSN               string
 	gRpcPort          string
-	Logger            slog.Logger
+	LoggerErr         ILoggerErrRepo
+	LoggerInfo        ILoggerInfoRepo
 	Notify            *ntfy.Ntfy
+	DryRunMode        bool
+	ArbitrageOrder    *data.ArbitrageOrder
+}
+
+func NewApp() *App {
+	return &App{}
 }
 
 type IOrderHistoryRepo interface {
 	Save(spread float64, ask *data.AskOrder, bid *data.BidOrder, createdAt int64) (string, error)
 }
 
+type ILoggerErrRepo interface {
+	Save(log string)
+}
+
+type ILoggerInfoRepo interface {
+	Save(log string)
+}
+
 func main() {
 	// configure slog
 
-	app := Config{}
-	app.setupLogger()
+	app := App{}
 	app.setupNotifyService()
+	app.DryRunMode = true
 
-	flag.StringVar(&app.DSN, "dsn", "host=192.168.15.14 port=5432 user=root password=root dbname=arbitrage-system sslmode=disable timezone=UTC connect_timeout=5", "Posgtres connection")
+	flag.StringVar(&app.DSN, "dsn", "host=aws-postgre-db.cjwmyk2c0zku.sa-east-1.rds.amazonaws.com port=5432 user=aws_postgre_db password=rfq6PlYM1NzFgmZm9QZ1 dbname=arbitrage_system sslmode=require timezone=UTC connect_timeout=5", "Posgtres connection")
 	flag.StringVar(&app.gRpcPort, "grpcPort", "50001", "gRPC Port Server Port")
 	flag.Parse()
 
@@ -49,16 +63,24 @@ func main() {
 	defer conn.Close()
 
 	app.IorderHistoryRepo = database.NewOrderHistory(conn)
+	app.LoggerErr = database.NewLoggerErrRepo(conn)
+	app.LoggerInfo = database.NewLoggerInfoRepo(conn)
+
+	// Initial checkup
+	app.LoggerErr.Save("Server is up - LoggerErr Test")
+	app.LoggerInfo.Save("Server is up - LoggerInfo Test")
 
 	// Register the gRPC Server
 	srv := NewOrderServer()
 	go app.gRPCListen(srv)
 	ob := srv.Models.OrderBook
 
+	slog.Info("Server is up and running.")
 	app.bestOrder(ob)
+
 }
 
-func (app *Config) bestOrder(ob *data.OrderBook) {
+func (app *App) bestOrder(ob *data.OrderBook) {
 	// ctx, cancel := context.WithCancel(context.Background())
 	// defer cancel()
 
@@ -77,6 +99,7 @@ func (app *Config) bestOrder(ob *data.OrderBook) {
 			if spread > 0.4 {
 				app.execOrder(ba, bb, spread)
 			}
+
 			aho := &data.AskOrder{
 				ExcID:    ba.ID,
 				Price:    ba.Price,
@@ -92,11 +115,9 @@ func (app *Config) bestOrder(ob *data.OrderBook) {
 
 			_, err := app.IorderHistoryRepo.Save(spread, aho, bho, createdAt)
 			if err != nil {
-				slog.Error("error saving to DB:", err)
+				app.LoggerErr.Save(fmt.Sprintf("app.bestOrder, error saving to DB, %v", err))
+				// slog.Error("error saving to DB:", err)
 			}
-
-			// fmt.Printf("Saved to DB: [%s]\n", id)
-
 		}
 		// Housekeeping
 		ob.RemoveExpiredAsks()
@@ -110,23 +131,37 @@ func (app *Config) bestOrder(ob *data.OrderBook) {
 	}
 }
 
-func (app *Config) execOrder(ba, bb *data.Order, spread float64) {
-	// How much volume have avaiable
-	// if ba.Volume < bb.Volume {
-	// 	slog.Info("Buy [%f]-[%f] at [%f] from %s, and Sell [%f]-[%f] at [%f] from %s\n", ba.Volume, (ba.Volume * ba.Price), ba.Price, ba.ID, bb.Volume, (bb.Volume * bb.Price), bb.Price, bb.ID)
-	// } else {
-	// 	slog.Info("Buy [%f]-[%f] at [%f] from %s, and Sell [%f]-[%f] at [%f] from %s\n", bb.Volume, (bb.Volume * bb.Price), bb.Price, bb.ID, ba.Volume, (ba.Volume * ba.Price), ba.Price, ba.ID)
-	// }
+func (app *App) execOrder(ba, bb *data.Order, spread float64) {
+	// validations before exec the order
 
+	// using same volume (low) for both orders
+	if ba.Volume <= bb.Volume {
+		bb.Volume = ba.Volume
+	} else {
+		ba.Volume = bb.Volume
+	}
+
+	// 1. check if there is any order that has been sent
+	if app.hasArbitrageOrder() {
+		return
+	} else {
+		app.LoggerInfo.Save("ArbitrageOrder Exec")
+		app.LoggerInfo.Save(fmt.Sprintf("%f", spread))
+		// ao := data.NewArbitrageOrder(ba, bo)
+		// res := ao.Exec()
+	}
 }
 
-func (app *Config) setupLogger() {
+// func (app *Config) setupLogger() {
+// 	// logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+// 	// slog.SetDefault(logger) // Updates slogs default instance of slog with our own handler.
+// }
 
-	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
-	slog.SetDefault(logger) // Updates slogs default instance of slog with our own handler.
-
-}
-
-func (app *Config) setupNotifyService() {
+func (app *App) setupNotifyService() {
 	app.Notify = ntfy.NewNtfy()
+	app.Notify.SendMsg("Server is up - NTFY Test", "Server is up - LoggerErr Test", false)
+}
+
+func (app *App) hasArbitrageOrder() bool {
+	return (app.ArbitrageOrder == nil)
 }

@@ -21,7 +21,7 @@ func openDB(dsn string) (*sql.DB, error) {
 	return db, nil
 }
 
-func (app *Config) connectToDB() (*sql.DB, error) {
+func (app *App) connectToDB() (*sql.DB, error) {
 	connection, err := openDB(app.DSN)
 	if err != nil {
 		return nil, err

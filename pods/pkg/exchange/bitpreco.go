@@ -2,7 +2,7 @@
 // Taxas: https://suporte.bity.com.br/pt-BR/articles/6967815-taxas
 
 // PUBLIC:
-// https://docs.BitPreco.com.br/rest/v3/
+// https://apidocs.bitpreco.com/
 // OrderBook: https://docs.BitPreco.com.br/rest/v3/#tag/Market-Data/operation/MarketsController_findOrderbook
 // Markets: https://api.BitPreco.com.br/rest/v3/markets
 

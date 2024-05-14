@@ -1,4 +1,13 @@
-ToDo:
+## How to install
+1. gh repo clone isslerman/ArbitrageSystem
+2. Get Go installed -> https://go.dev/doc/install
+3. Gcc req in Ubuntu -> apt-get install build-essential
+4. Linux build all pods: 
+```make -f makefile.nix build-all```
+1. Linux build all pods: 
+```bash make -f makefile.nix build-server```
+
+## ToDo:
 
 - Add Exchanges: 
 1. https://bitcointoyou.com/#servicos
