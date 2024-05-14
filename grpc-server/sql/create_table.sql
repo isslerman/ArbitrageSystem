@@ -21,7 +21,7 @@ SET default_tablespace = '';
 SET default_table_access_method = heap;
 
 --
--- Name: users; Type: TABLE; Schema: public; Owner: -
+-- Name: orderHistory; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.orderHistory (
@@ -38,3 +38,27 @@ CREATE TABLE public.orderHistory (
     created_at integer,
     updated_at integer,
 );
+
+CREATE TABLE public.log_info (
+    id VARCHAR(255) PRIMARY KEY,
+    info VARCHAR(255), 
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE public.log_error (
+    id VARCHAR(255) PRIMARY KEY,
+    err VARCHAR(255), 
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+
+
+
+
+
+
+
+
+
+
+
