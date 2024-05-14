@@ -39,12 +39,16 @@ ToDo:
 
 --------
 
+- Others CEX to explore: 
+  - NovaDax (https://www.novadax.com.br/product/orderbook?pair=SOL_BRL)
+  - Coinnext (https://trade.coinext.com.br/)
 - Poder ver uma amostra de dados do Pod para verificação de dados. 
 - How to know if any pod stopped
 - How to know if any pod is giving any error?
 - Create a dockerfile with metabase ? stay at our notebook or let's go to our server? 
 - How much is the balance in each wallet?
 - How much we have earned each day?
+- Add zap logging to pods. Each pod has a sample data to a specific logfile /var/log/pod.log - possible with rotate file. 
 - Possible new tokens: Fetch.AI, Filecoin (Foxbit)
 
 

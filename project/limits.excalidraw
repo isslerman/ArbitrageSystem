@@ -1,0 +1,76 @@
+{
+  "type": "excalidraw",
+  "version": 2,
+  "source": "vscode-webview://17585g50t2di1evied3ibunugmj5ec401ihlfl1gi9ku0d4edc1j",
+  "elements": [
+    {
+      "id": "D_qxvED_7iSYNeKtUmqz8",
+      "type": "rectangle",
+      "x": 354.421875,
+      "y": 160.32421875,
+      "width": 207.84375,
+      "height": 240.4,
+      "angle": 0,
+      "strokeColor": "#000000",
+      "backgroundColor": "#fa5252",
+      "fillStyle": "solid",
+      "strokeWidth": 1,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "roundness": null,
+      "seed": 1818547189,
+      "version": 97,
+      "versionNonce": 893269979,
+      "isDeleted": false,
+      "boundElements": [
+        {
+          "type": "text",
+          "id": "lTmiZT9N4Vq8S-gpt_GHn"
+        }
+      ],
+      "updated": 1714993134956,
+      "link": null,
+      "locked": false
+    },
+    {
+      "id": "lTmiZT9N4Vq8S-gpt_GHn",
+      "type": "text",
+      "x": 359.421875,
+      "y": 165.32421875,
+      "width": 196.875,
+      "height": 230.39999999999998,
+      "angle": 0,
+      "strokeColor": "#000000",
+      "backgroundColor": "transparent",
+      "fillStyle": "hachure",
+      "strokeWidth": 1,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "roundness": null,
+      "seed": 1905430677,
+      "version": 110,
+      "versionNonce": 765439035,
+      "isDeleted": false,
+      "boundElements": null,
+      "updated": 1714993142867,
+      "link": null,
+      "locked": false,
+      "text": "BITY\nWithdraw: \nR$ 40k\n102 SOL - taxa 0\n\nDeposit:\nR$ 40k - tx 0\n200 SOL - tx 0\n\nhttps://suporte.bity.\ncom.br/pt-BR/articles\n/6967815-taxas",
+      "fontSize": 16,
+      "fontFamily": 3,
+      "textAlign": "left",
+      "verticalAlign": "top",
+      "containerId": "D_qxvED_7iSYNeKtUmqz8",
+      "originalText": "BITY\nWithdraw: \nR$ 40k\n102 SOL - taxa 0\n\nDeposit:\nR$ 40k - tx 0\n200 SOL - tx 0\n\nhttps://suporte.bity.com.br/pt-BR/articles/6967815-taxas"
+    }
+  ],
+  "appState": {
+    "gridSize": null,
+    "viewBackgroundColor": "#ffffff"
+  },
+  "files": {}
+}
