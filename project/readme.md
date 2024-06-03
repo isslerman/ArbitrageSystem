@@ -16,7 +16,7 @@
 4. ver lista aqui -> https://cointradermonitor.com/arbitragem
 5. + algumas -> [BingX], [Alpha Vantage],[Tiingo]
 
-- Bus rule filter for exchanges: if price, volume == 0, don't send msg.   
+ [ ]- Bus rule filter for exchanges: if price, volume == 0, don't send msg.   
 - Ver Erro:
 
 --------
