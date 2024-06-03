@@ -36,7 +36,7 @@ CREATE TABLE public.orderHistory (
     bpricevet DOUBLE PRECISION, 
     bvolume DOUBLE PRECISION, 
     created_at integer,
-    updated_at integer,
+    updated_at integer
 );
 
 CREATE TABLE public.log_info (

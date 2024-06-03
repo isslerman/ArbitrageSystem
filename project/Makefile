@@ -105,7 +105,7 @@ build-server:
 ## start: start gRPC server
 start-server: 
 	@echo "Starting gRPC server"
-	cd ../grpc-server/bin && ./${GRPC_SERVER_BINARY}
+	cd ../grpc-server/bin && ./${GRPC_SERVER_BINARY} -dsn "host=localhost port=5432 user=user password=password dbname=arbitrage_system sslmode=disable timezone=UTC connect_timeout=5"
 	@echo "Done!"
 
 ## stop: stop the gRPC server
@@ -113,6 +113,7 @@ stop-server:
 	@echo "Stopping gRPC server..."
 	@-pkill -SIGTERM -f "./${GRPC_SERVER_BINARY}"
 	@echo "Stopped gRPC server!"
+
 
 ## DOCKER-BUILD
 ###############
