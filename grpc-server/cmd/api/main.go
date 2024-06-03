@@ -17,14 +17,16 @@ var (
 	ErrNotfound   = errors.New("not found")
 )
 
+// Our app confiiguration.
+// Errors and Infos for debug: All the erros and info msgs are saved to a DB.
 type App struct {
 	IorderHistoryRepo IOrderHistoryRepo
-	DSN               string
-	gRpcPort          string
-	LoggerErr         ILoggerErrRepo
-	LoggerInfo        ILoggerInfoRepo
-	Notify            *ntfy.Ntfy
-	DryRunMode        bool
+	DSN               string          // DSN to connect to DB
+	gRpcPort          string          // port to listen on for gRPC requests
+	LoggerErr         ILoggerErrRepo  // Repo to save errors to DB
+	LoggerInfo        ILoggerInfoRepo // Repo to save info to DB
+	Notify            *ntfy.Ntfy      // Notify sends notifications to mobile
+	DryRunMode        bool            // Send the orders or not
 	ArbitrageOrder    *data.ArbitrageOrder
 }
 
@@ -80,10 +82,9 @@ func main() {
 
 }
 
+// bestOrder receives the OrderBook and gets the best ask and bid orders.
 func (app *App) bestOrder(ob *data.OrderBook) {
-	// ctx, cancel := context.WithCancel(context.Background())
-	// defer cancel()
-
+	// looping every 2 seconds to get the best ask and bid orders
 	for {
 		if (ob.SizeAsk() > 0) && (ob.SizeBid() > 0) {
 			ba := ob.BestAsk()
@@ -96,6 +97,8 @@ func (app *App) bestOrder(ob *data.OrderBook) {
 			fmt.Printf("BID[%s], %f, %f, %f, ", bb.ID, bb.Price, bb.PriceVET, bb.Volume)
 			fmt.Printf("time,%s\n", ba.CreatedAtHuman())
 
+			// our filter to execute the order
+			// what will be our rules?
 			if spread > 0.4 {
 				app.execOrder(ba, bb, spread)
 			}
@@ -131,17 +134,29 @@ func (app *App) bestOrder(ob *data.OrderBook) {
 	}
 }
 
+// execOrder - receives the best ask and best bid and execute the order
 func (app *App) execOrder(ba, bb *data.Order, spread float64) {
 	// validations before exec the order
 
-	// using same volume (low) for both orders
+	// getting the same volume (low) to use in both
 	if ba.Volume <= bb.Volume {
 		bb.Volume = ba.Volume
 	} else {
 		ba.Volume = bb.Volume
 	}
 
-	// 1. check if there is any order that has been sent
+	// 1. check for open orders
+	// If there is already an open order, we need to check if we need to cancel it or not
+
+	// Logic to be done here
+	// 1. If we have any order already open, we need to check the threshol to cancel or not.
+	// 2. If the threshold is met, we cancel the order and set a new one
+	// 3. if the threshold is not met, we leave it as is
+	// 4. after the order is created, we need to check if the orders has been executed,
+	// maybe here inside the loop or outside of the loop in another goroutine?
+	// this goroutine will check if when the orden has been executed or canceled.
+	// if the order has been executed, we need to create the same order with the opposite side
+	// at binance.
 	if app.hasArbitrageOrder() {
 		return
 	} else {

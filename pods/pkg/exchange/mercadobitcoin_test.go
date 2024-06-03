@@ -24,13 +24,12 @@ func Test_name(t *testing.T) {
 func Test_bestAsk(t *testing.T) {
 	e := NewMercadoBitcoin()
 
-	val, err := e.BestOrder()
+	ask, bid, err := e.BestOrder()
 	if err != nil {
 		t.Errorf("Error getting bestAsk. Got error %s", err)
 	}
 
-	price := val.BestAsk.Price
-	if price < 0.0 {
+	if ask.Price < 0.0 || bid.Price < 0.0 {
 		t.Error("expected bestAsk to be zero or positive number.")
 	}
 }

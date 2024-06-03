@@ -59,6 +59,7 @@
 - How much we have earned each day?
 - Add zap logging to pods. Each pod has a sample data to a specific logfile /var/log/pod.log - possible with rotate file. 
 - Possible new tokens: Fetch.AI, Filecoin (Foxbit)
+- IMPORTANT! Tecnica para pegar nosso melhor preço de compra na Binance e deixar uma ordem de venda na exchange com 0,4% de profit e sempre ajustar conforme o preço alterar. Reajuste por evento e/ou tempo. Qts segundos ou movimentação do preço. Caso seja efetuada a venda, o evento dispara uma compra na Binance ( market price? qual melhor estratégia? )
 
 
 --------

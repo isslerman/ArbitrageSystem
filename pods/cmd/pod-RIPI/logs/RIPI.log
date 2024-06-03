@@ -1,1 +1,3 @@
 {"level":"info","timestamp":"2024-05-05T09:50:43.695-0300","msg":"Pod started","git_revision":"","go_version":"go1.21.6"}
+{"level":"info","timestamp":"2024-05-05T11:43:21.737-0300","msg":"Starting Pod","git_revision":"","go_version":"go1.21.6"}
+{"level":"info","timestamp":"2024-05-05T11:43:21.737-0300","msg":"Pod started","git_revision":"","go_version":"go1.21.6"}
