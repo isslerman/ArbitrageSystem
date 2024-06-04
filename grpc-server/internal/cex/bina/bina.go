@@ -94,7 +94,7 @@ func (e *Bina) CancelAllOrders() error {
 }
 
 // OrdersCreate -
-func (e *Bina) OrdersCreate(o *data.OrdersCreateRequest) error {
+func (e *Bina) CreateOrder(o *data.OrdersCreateRequest) (string, error) {
 
 	var side binance.SideType
 	if o.Side == "sell" {
@@ -118,13 +118,13 @@ func (e *Bina) OrdersCreate(o *data.OrdersCreateRequest) error {
 		Price(price).
 		Do(context.Background())
 	if err != nil {
-		log.Fatal("error creating order", err)
-		return err
+		// log.Fatal("error creating order", err)
+		return "", err
 	}
 	slog.Info(fmt.Sprintf("OrdersCreate: %v", order))
 
 	// Use Test() instead of Do() for testing.
-	return nil
+	return fmt.Sprintf("%d", order.OrderID), nil
 }
 
 func combineErrors(errs []error) error {

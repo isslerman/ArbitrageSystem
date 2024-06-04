@@ -15,7 +15,7 @@ func Test_CancelAllOrders(t *testing.T) {
 	}
 }
 
-func Test_OrdersCreate(t *testing.T) {
+func Test_CreateOrder(t *testing.T) {
 	// New instance of the exchange RIPI
 	ripi := New()
 
@@ -28,7 +28,7 @@ func Test_OrdersCreate(t *testing.T) {
 	}
 
 	// creating an order
-	err := ripi.OrdersCreate(order)
+	_, err := ripi.CreateOrder(order)
 	if err != nil {
 		t.Errorf("error creating an order: %d", err)
 	}

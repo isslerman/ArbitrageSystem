@@ -28,7 +28,7 @@ func Test_OrdersCreate(t *testing.T) {
 	}
 
 	// creating an order
-	err := ripi.OrdersCreate(order)
+	_, err := ripi.CreateOrder(order)
 	if err != nil {
 		t.Errorf("error creating an order: %d", err)
 	}

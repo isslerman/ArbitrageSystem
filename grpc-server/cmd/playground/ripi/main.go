@@ -20,15 +20,15 @@ func main() {
 	}
 
 	// creating an order
-	err := ripi.OrdersCreate(order)
+	id, err := ripi.CreateOrder(order)
 	if err != nil {
 		fmt.Println("Error:", err)
 	} else {
 		fmt.Println("orders cancelled")
 	}
 
-	// Print Exchange Name
-	fmt.Println("Exchange ID:", ripi.Id())
+	// Print the exchange ID and the order ID
+	fmt.Printf("Exchange ID: %s OrderID: %s", ripi.Id(), id)
 
 	// cancel all orders
 	err = ripi.CancelAllOrders()
@@ -37,27 +37,4 @@ func main() {
 	} else {
 		fmt.Println("orders cancelled")
 	}
-
-	// Check if there is any order open
-
-	// Create an order
-
-	// Cancel all orders
-
-	// the body to pass
-	// cor := cex.CreateOrderRequest{
-	// 	Amount: 0.5,
-	// 	Pair:   "SOL_BRL",
-	// 	Price:  779.99,
-	// 	Side:   "sell",
-	// 	Type:   "limit",
-	// }
-
-	// pass a copy, not a pointer
-	// id, err := ripi.CreateOrder(cor)
-	// if err != nil {
-	// 	fmt.Println("Error creating order:", err)
-	// 	return
-	// }
-	// fmt.Println("Order created: ", id)
 }

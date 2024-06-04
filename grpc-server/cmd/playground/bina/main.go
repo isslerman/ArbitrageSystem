@@ -21,7 +21,7 @@ func main() {
 	}
 
 	// creating an order
-	err := bina.OrdersCreate(order)
+	id, err := bina.CreateOrder(order)
 	if err != nil {
 		slog.Error("Error:", err)
 	}
@@ -32,6 +32,6 @@ func main() {
 		fmt.Println("Error:", err)
 	}
 
-	// Print Exchange Name
-	fmt.Println("Exchange ID:", bina.Id())
+	// Print the exchange ID and the order ID
+	fmt.Printf("Exchange ID: %s OrderID: %s", bina.Id(), id)
 }

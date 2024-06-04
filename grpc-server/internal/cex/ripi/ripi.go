@@ -156,7 +156,7 @@ type ripidata struct {
 }
 
 // OrdersCreate -
-func (e *Ripi) OrdersCreate(o *data.OrdersCreateRequest) error {
+func (e *Ripi) CreateOrder(o *data.OrdersCreateRequest) (string, error) {
 	endpoint := "orders"
 	endpoint = fmt.Sprintf("%s%s", e.apiBaseURL, endpoint)
 	fmt.Println("RIPI OrdersCreate")
@@ -178,18 +178,18 @@ func (e *Ripi) OrdersCreate(o *data.OrdersCreateRequest) error {
 	printResp(resp, err)
 	// printRespTraceInfo(resp)
 	if resp.StatusCode() == 200 {
-		return nil
+		return res.Data.ID, nil
 	}
 
 	if resp.StatusCode() == 400 {
-		return errors.New(res.Message)
+		return "", errors.New(res.Message)
 	}
 
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	return nil
+	return "", errors.New("unknown error")
 }
 
 func printResp(resp *resty.Response, err error) {

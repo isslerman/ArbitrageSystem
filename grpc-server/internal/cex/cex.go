@@ -21,7 +21,7 @@ type Cex interface {
 	Balance(asset string) (amount float64, err error)
 	CancelAllOrders() error
 	Id() string
-	OrdersCreate(o *data.OrdersCreateRequest) error
+	CreateOrder(o *data.OrdersCreateRequest) (string, error)
 }
 
 // New is the factory method to create instances of different exchanges
