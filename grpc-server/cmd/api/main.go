@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"flag"
 	"fmt"
 	"grpc-server/data"
@@ -10,11 +9,6 @@ import (
 	"log"
 	"log/slog"
 	"time"
-)
-
-var (
-	ErrBadRequest = errors.New("bad request")
-	ErrNotfound   = errors.New("not found")
 )
 
 // Our app confiiguration.
@@ -27,7 +21,9 @@ type App struct {
 	LoggerInfo        ILoggerInfoRepo // Repo to save info to DB
 	Notify            *ntfy.Ntfy      // Notify sends notifications to mobile
 	DryRunMode        bool            // Send the orders or not
-	ArbitrageOrder    *data.ArbitrageOrder
+	ArbitrageOrder    *data.ArbitrageControl
+	baseToken         string // base token to use for arbitrage
+	quoteToken        string // quote token to use for arbitrage
 }
 
 func NewApp() *App {
@@ -47,14 +43,15 @@ type ILoggerInfoRepo interface {
 }
 
 func main() {
-	// configure slog
-
+	// starting the app
 	app := App{}
 	app.setupNotifyService()
 	app.DryRunMode = true
 
 	flag.StringVar(&app.DSN, "dsn", "host=aws-postgre-db.cjwmyk2c0zku.sa-east-1.rds.amazonaws.com port=5432 user=aws_postgre_db password=rfq6PlYM1NzFgmZm9QZ1 dbname=arbitrage_system sslmode=require timezone=UTC connect_timeout=5", "Posgtres connection")
 	flag.StringVar(&app.gRpcPort, "grpcPort", "50001", "gRPC Port Server Port")
+	flag.StringVar(&app.baseToken, "base", "SOL", "base token to use for arbitrage (base/quote)")
+	flag.StringVar(&app.quoteToken, "quote", "BRL", "quote token to use for arbitrage (base/quote)")
 	flag.Parse()
 
 	//postgre db
@@ -77,20 +74,27 @@ func main() {
 	go app.gRPCListen(srv)
 	ob := srv.Models.OrderBook
 
+	pairInfo := fmt.Sprintf("Arbitrage pair is %s/%s", app.baseToken, app.quoteToken)
+	slog.Info(pairInfo)
 	slog.Info("Server is up and running.")
+	app.LoggerInfo.Save(pairInfo)
+	app.LoggerInfo.Save("Server is up and running.")
 	app.bestOrder(ob)
 
 }
 
-// bestOrder receives the OrderBook and gets the best ask and bid orders.
+// bestOrder receives the OrderBook over gRPC
+// and find the best ask and bid orders every 2 seconds
 func (app *App) bestOrder(ob *data.OrderBook) {
 	// looping every 2 seconds to get the best ask and bid orders
 	for {
+		// filter only orders with volume >0
 		if (ob.SizeAsk() > 0) && (ob.SizeBid() > 0) {
 			ba := ob.BestAsk()
 			bb := ob.BestBid()
 			spread := (1 - (ba.PriceVET / bb.PriceVET)) * 100
 			createdAt := time.Now().Unix()
+
 			// if spread > 0.0 {
 			fmt.Printf("Order, good,%.2f ,", spread)
 			fmt.Printf("ASK[%s], %f, %f, %f, ", ba.ID, ba.Price, ba.PriceVET, ba.Volume)
@@ -103,6 +107,7 @@ func (app *App) bestOrder(ob *data.OrderBook) {
 				app.execOrder(ba, bb, spread)
 			}
 
+			// aho and bho save all orders to the database
 			aho := &data.AskOrder{
 				ExcID:    ba.ID,
 				Price:    ba.Price,
@@ -119,7 +124,6 @@ func (app *App) bestOrder(ob *data.OrderBook) {
 			_, err := app.IorderHistoryRepo.Save(spread, aho, bho, createdAt)
 			if err != nil {
 				app.LoggerErr.Save(fmt.Sprintf("app.bestOrder, error saving to DB, %v", err))
-				// slog.Error("error saving to DB:", err)
 			}
 		}
 		// Housekeeping
@@ -166,11 +170,6 @@ func (app *App) execOrder(ba, bb *data.Order, spread float64) {
 		// res := ao.Exec()
 	}
 }
-
-// func (app *Config) setupLogger() {
-// 	// logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
-// 	// slog.SetDefault(logger) // Updates slogs default instance of slog with our own handler.
-// }
 
 func (app *App) setupNotifyService() {
 	app.Notify = ntfy.NewNtfy()
