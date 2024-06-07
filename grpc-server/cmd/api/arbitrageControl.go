@@ -14,7 +14,7 @@ import (
 // Launching an ask limit order in exchange A and waiting this order to be executed
 // to launch the bid order in exchange B.
 type ArbitrageControl struct {
-	AskOrder       data.AskOpenOrder // initial order received
+	AskOrder       data.AskOpenOrder // last order open at exchange A
 	BidOrder       data.BidOpenOrder // initial order received
 	AskOrderStatus data.OrderState   // actual state of an order
 	BidOrderStatus data.OrderState   // actual state of an order
@@ -24,6 +24,7 @@ type ArbitrageControl struct {
 	cexAsk         cex.Cex           // instance of exchange A
 	cexBid         cex.Cex           // instance of exchange B
 	Threshold      float64           // threshold value to recreate or not the sell order at exchange A Ask
+	Profit         float64           // how much is the profit/distance from the bestask price received
 	Dryrun         bool              // if true, it will not send the orders to the exchanges
 	DB             repository.DatabaseRepo
 }
@@ -36,6 +37,8 @@ func NewArbitrageControl(excA, excB cex.ID, aSymbol, bSymbol string, db reposito
 		BidSymbol:      bSymbol,           // exchange that owns the bid order
 		cexAsk:         cex.New(excA),     // exchange A (sell) - ask order
 		cexBid:         cex.New(excB),     // exchange B (buy) - bid order
+		Threshold:      0.2,               // 0.2 = 0.2%
+		Profit:         0.4,               // 0.4 = 0.4% profit
 		createdAt:      time.Now(),        // time the arbitrage was created
 		Dryrun:         true,              // if true, it will not send the orders to the exchanges
 		DB:             db,
@@ -56,52 +59,73 @@ func (ao *ArbitrageControl) validate() error {
 
 // set a new value received for the AskOpenOrder
 func (ao *ArbitrageControl) AskOpenOrder(a data.AskOpenOrder) {
+	// adjusting the price with the profit
+	a.Price = a.Price * (1 + (ao.Profit / 100))
 	// is there any ask order created?
 	if !ao.hasAskOpenOrders() {
+		// !!! JOGAR O DRYRUN PARA DENTRO DAS FUNCOES, LOG FUNCIONA?
 		if !ao.Dryrun {
 			_, err := ao.createLimitOrder(data.OpenOrder(a), "sell")
 			if err != nil {
 				// source, msg, context to help
-				err := fmt.Sprintf("AskOpenOrder, error creating limit order, %s, %v", err, a)
+				err := fmt.Sprintf("[error creating limit order], %s, %v", err, a)
 				ao.DB.SaveLoggerErr(err)
 				return
 				// TODO: handle error
 			}
-		} else {
-			info := fmt.Sprintf("createLimitOrder, dryrun, %v", a)
+
+		} else { // DRYRUN MODE
+			info := fmt.Sprintf("[limitOrderCreated][dryrun], [%s] Price:%.2f Amount:%.2f Side:%s Pair:%s", ao.cexAsk.Id(), a.Price, a.Amount, a.Side, a.Pair)
+			ao.DB.SaveLoggerInfo(info)
+			ao.AskOrderStatus = data.StateCreated
+			ao.AskOrder = a
+			info = "[askorder status changed to StateCreated][dryrun]"
 			ao.DB.SaveLoggerInfo(info)
 		}
-		ao.AskOrder = a
 	} else {
 		// check if the new price is inside the range of the threshold
+		// here the threshold value is the newprice +- the threshold value
 		// TODO: change this to a method
-		if a.Price <= ao.AskOrder.Price*ao.Threshold {
-			info := fmt.Sprintf("AskOpenOrder, price inside threshold, %f, %f", a.Price, ao.Threshold)
+		if isInsideThreshold(ao.AskOrder.Price, ao.Threshold, a.Price) {
+			info := fmt.Sprintf("[price inside threshold], %f, %f, %f, %f", a.Price, ao.Threshold, ao.AskOrder.Price, ao.AskOrder.Price/a.Price)
 			ao.DB.SaveLoggerInfo(info)
 			return
 		} else {
+			// Log info outside threshold
+			info := fmt.Sprintf("[price outside threshold], %f, %f, %f, %f", a.Price, ao.Threshold, ao.AskOrder.Price, ao.AskOrder.Price/a.Price)
+			ao.DB.SaveLoggerInfo(info)
+
 			// if dryrun is TRUE we don't execute orders to cex
 			if !ao.Dryrun {
 				err := ao.cancelAllAskOrders()
 				if err != nil {
-					err := fmt.Sprintf("cancelAllAskOrders, error cancelling all ask orders, %s", err)
+					err := fmt.Sprintf("[error cancelling allaskorders], %s", err)
 					ao.DB.SaveLoggerErr(err)
 					return
 				}
+
 				_, err = ao.createLimitOrder(data.OpenOrder(a), "sell")
 				if err != nil {
-					err := fmt.Sprintf("createLimitOrder, error creating limit order, %s, %v", err, a)
+					err := fmt.Sprintf("[error creating limit order], %s, %v", err, a)
 					ao.DB.SaveLoggerErr(err)
 					return
 					// TODO: handle error
 				}
-			} else {
-				info := fmt.Sprintf("cancelAllAskOrders, dryrun, %v", a)
+			} else { // DRYRUN MODE
+				ao.AskOrderStatus = data.StateCancelled
+				info := "[cancelling allaskorders][dryrun], "
 				ao.DB.SaveLoggerInfo(info)
-				info = fmt.Sprintf("createLimitOrder, dryrun, %v", a)
+				info = "[askorder status changed to StateCancelled][dryrun], "
 				ao.DB.SaveLoggerInfo(info)
+
+				info = fmt.Sprintf("[limitOrderCreated][dryrun], [%s] Price:%.2f Amount:%.2f Side:%s Pair:%s", ao.cexAsk.Id(), a.Price, a.Amount, a.Side, a.Pair)
+				ao.DB.SaveLoggerInfo(info)
+				ao.AskOrderStatus = data.StateCreated
+				ao.AskOrder = a
+				info = "[askorder status changed to StateCreated][dryrun]"
+				ao.DB.SaveLoggerInfo(info)
+
 			}
-			// TODO: handle info log
 		}
 
 	}
@@ -149,6 +173,11 @@ func (ao *ArbitrageControl) createLimitOrder(o data.OpenOrder, cexSide string) (
 		}
 		// setting the status of the order to created
 		ao.AskOrderStatus = data.StateCreated
+
+		// update the AskOrder
+		ao.AskOrder.Price = order.Price
+		ao.AskOrder.Amount = order.Amount
+
 		return orderId, nil
 	} else if cexSide == "bid" {
 		orderId, err := ao.cexBid.CreateOrder(order)
@@ -172,4 +201,15 @@ func (ao *ArbitrageControl) cancelAllAskOrders() error {
 	}
 	ao.AskOrderStatus = data.StateCancelled
 	return nil
+}
+
+// check if the valueToCheck is between the base with the threshold
+// threshold must be a percentage. Ex. 0.4 = 0.4%
+// range = [base - threshold, base + threshold]
+func isInsideThreshold(base, threshold, valueToCheck float64) bool {
+	if (valueToCheck >= ((1 - threshold/100) * base)) && (valueToCheck <= ((1 + threshold/100) * base)) {
+		return true
+	} else {
+		return false
+	}
 }
