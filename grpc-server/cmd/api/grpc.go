@@ -3,8 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
-	"grpc-server/data"
 	"grpc-server/internal/pb/orders"
+	"grpc-server/pkg/data"
 	"log"
 	"net"
 
