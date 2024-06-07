@@ -3,9 +3,11 @@ package main
 import (
 	"flag"
 	"fmt"
-	"grpc-server/data"
-	"grpc-server/infra/database"
 	"grpc-server/infra/ntfy"
+	"grpc-server/internal/cex"
+	"grpc-server/pkg/data"
+	"grpc-server/pkg/repository"
+	"grpc-server/pkg/repository/dbrepo"
 	"log"
 	"log/slog"
 	"time"
@@ -14,32 +16,18 @@ import (
 // Our app confiiguration.
 // Errors and Infos for debug: All the erros and info msgs are saved to a DB.
 type App struct {
-	IorderHistoryRepo IOrderHistoryRepo
-	DSN               string          // DSN to connect to DB
-	gRpcPort          string          // port to listen on for gRPC requests
-	LoggerErr         ILoggerErrRepo  // Repo to save errors to DB
-	LoggerInfo        ILoggerInfoRepo // Repo to save info to DB
-	Notify            *ntfy.Ntfy      // Notify sends notifications to mobile
-	DryRunMode        bool            // Send the orders or not
-	ArbitrageOrder    *data.ArbitrageControl
-	baseToken         string // base token to use for arbitrage
-	quoteToken        string // quote token to use for arbitrage
+	DB         repository.DatabaseRepo
+	DSN        string     // DSN to connect to DB
+	gRpcPort   string     // port to listen on for gRPC requests
+	Notify     *ntfy.Ntfy // Notify sends notifications to mobile
+	DryRunMode bool       // Send the orders or not
+	ac         *data.ArbitrageControl
+	baseToken  string // base token to use for arbitrage
+	quoteToken string // quote token to use for arbitrage
 }
 
 func NewApp() *App {
 	return &App{}
-}
-
-type IOrderHistoryRepo interface {
-	Save(spread float64, ask *data.AskOrder, bid *data.BidOrder, createdAt int64) (string, error)
-}
-
-type ILoggerErrRepo interface {
-	Save(log string)
-}
-
-type ILoggerInfoRepo interface {
-	Save(log string)
 }
 
 func main() {
@@ -61,31 +49,40 @@ func main() {
 	}
 	defer conn.Close()
 
-	app.IorderHistoryRepo = database.NewOrderHistory(conn)
-	app.LoggerErr = database.NewLoggerErrRepo(conn)
-	app.LoggerInfo = database.NewLoggerInfoRepo(conn)
+	app.DB = dbrepo.NewPostgresDBRepo(conn)
 
 	// Initial checkup
-	app.LoggerErr.Save("Server is up - LoggerErr Test")
-	app.LoggerInfo.Save("Server is up - LoggerInfo Test")
+	app.DB.SaveLoggerInfo("Server is up - LoggerInfo Test")
+	app.DB.SaveLoggerErr("Server is up - LoggerErr Test")
 
 	// Register the gRPC Server
 	srv := NewOrderServer()
 	go app.gRPCListen(srv)
 	ob := srv.Models.OrderBook
 
+	// Strategie config and load
+	cexAsk := cex.InstanceRipi
+	cexBid := cex.InstanceBina
+	aSymbol := fmt.Sprintf("%s%s", app.baseToken, app.quoteToken)
+	bSymbol := fmt.Sprintf("%s_%s", app.baseToken, app.quoteToken)
+	// creating a new AC
+	app.ac, err = data.NewArbitrageControl(cexAsk, cexBid, aSymbol, bSymbol)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	pairInfo := fmt.Sprintf("Arbitrage pair is %s/%s", app.baseToken, app.quoteToken)
 	slog.Info(pairInfo)
 	slog.Info("Server is up and running.")
-	app.LoggerInfo.Save(pairInfo)
-	app.LoggerInfo.Save("Server is up and running.")
-	app.bestOrder(ob)
+	app.DB.SaveLoggerInfo(pairInfo)
+	app.DB.SaveLoggerInfo("Server is up and running.")
+	app.run(ob)
 
 }
 
 // bestOrder receives the OrderBook over gRPC
 // and find the best ask and bid orders every 2 seconds
-func (app *App) bestOrder(ob *data.OrderBook) {
+func (app *App) run(ob *data.OrderBook) {
 	// looping every 2 seconds to get the best ask and bid orders
 	for {
 		// filter only orders with volume >0
@@ -95,17 +92,8 @@ func (app *App) bestOrder(ob *data.OrderBook) {
 			spread := (1 - (ba.PriceVET / bb.PriceVET)) * 100
 			createdAt := time.Now().Unix()
 
-			// if spread > 0.0 {
-			fmt.Printf("Order, good,%.2f ,", spread)
-			fmt.Printf("ASK[%s], %f, %f, %f, ", ba.ID, ba.Price, ba.PriceVET, ba.Volume)
-			fmt.Printf("BID[%s], %f, %f, %f, ", bb.ID, bb.Price, bb.PriceVET, bb.Volume)
-			fmt.Printf("time,%s\n", ba.CreatedAtHuman())
-
-			// our filter to execute the order
-			// what will be our rules?
-			if spread > 0.4 {
-				app.execOrder(ba, bb, spread)
-			}
+			// Strategy ArbitrageControl Two Cex
+			app.strategyArbitrageContol(ba, bb, spread)
 
 			// aho and bho save all orders to the database
 			aho := &data.AskOrder{
@@ -121,10 +109,23 @@ func (app *App) bestOrder(ob *data.OrderBook) {
 				Volume:   bb.Volume,
 			}
 
-			_, err := app.IorderHistoryRepo.Save(spread, aho, bho, createdAt)
+			_, err := app.DB.SaveOrderHistory(spread, aho, bho, createdAt)
 			if err != nil {
-				app.LoggerErr.Save(fmt.Sprintf("app.bestOrder, error saving to DB, %v", err))
+				app.DB.SaveLoggerErr(fmt.Sprintf("app.bestOrder, error saving to DB, %v", err))
 			}
+
+			// if spread > 0.0 {
+			fmt.Printf("Order, good,%.2f ,", spread)
+			fmt.Printf("ASK[%s], %f, %f, %f, ", ba.ID, ba.Price, ba.PriceVET, ba.Volume)
+			fmt.Printf("BID[%s], %f, %f, %f, ", bb.ID, bb.Price, bb.PriceVET, bb.Volume)
+			fmt.Printf("time,%s\n", ba.CreatedAtHuman())
+
+			// Strategy Buy and Sell at same time
+			// if spread > 0.4 {
+			// 	app.execOrder(ba, bb, spread)
+			// }
+			// app.execOrder(ba, bb, spread)
+
 		}
 		// Housekeeping
 		ob.RemoveExpiredAsks()
@@ -138,44 +139,51 @@ func (app *App) bestOrder(ob *data.OrderBook) {
 	}
 }
 
-// execOrder - receives the best ask and best bid and execute the order
-func (app *App) execOrder(ba, bb *data.Order, spread float64) {
-	// validations before exec the order
+func (app *App) strategyArbitrageContol(ba, bb *data.Order, spread float64) {
+	// Log info
+	info := fmt.Sprintf("[SAC]New Price received [%s] - PriceVET, %f, Vol, %f", ba.ID, ba.PriceVET, ba.Volume)
+	app.DB.SaveLoggerInfo(info)
 
-	// getting the same volume (low) to use in both
-	if ba.Volume <= bb.Volume {
-		bb.Volume = ba.Volume
-	} else {
-		ba.Volume = bb.Volume
-	}
-
-	// 1. check for open orders
-	// If there is already an open order, we need to check if we need to cancel it or not
-
-	// Logic to be done here
-	// 1. If we have any order already open, we need to check the threshol to cancel or not.
-	// 2. If the threshold is met, we cancel the order and set a new one
-	// 3. if the threshold is not met, we leave it as is
-	// 4. after the order is created, we need to check if the orders has been executed,
-	// maybe here inside the loop or outside of the loop in another goroutine?
-	// this goroutine will check if when the orden has been executed or canceled.
-	// if the order has been executed, we need to create the same order with the opposite side
-	// at binance.
-	if app.hasArbitrageOrder() {
+	// creating the new askorder received
+	a, err := data.NewAskOpenOrder(ba.Volume, ba.PriceVET, app.ac.AskSymbol, "sell")
+	if err != nil {
+		err := fmt.Sprintf("[SAC]Error creting NewAskOpenOrder [%s] - %f, %f, %s, sell", ba.ID, ba.Volume, ba.PriceVET, app.ac.AskSymbol)
+		app.DB.SaveLoggerErr(err)
 		return
-	} else {
-		app.LoggerInfo.Save("ArbitrageOrder Exec")
-		app.LoggerInfo.Save(fmt.Sprintf("%f", spread))
-		// ao := data.NewArbitrageOrder(ba, bo)
-		// res := ao.Exec()
 	}
+	app.ac.AskOpenOrder(a)
+	_ = ba
+	_ = bb
+	_ = spread
 }
+
+// execOrder - receives the best ask and best bid and execute the order
+// when the spread is higher than 0.4
+// func (app *App) execOrder(ba, bb *data.Order, spread float64) {
+// validations before exec the order
+
+// getting the same volume (low) to use in both
+// if ba.Volume <= bb.Volume {
+// 	bb.Volume = ba.Volume
+// } else {
+// 	ba.Volume = bb.Volume
+// }
+
+// 1. check for open orders
+// If there is already an open order, we need to check if we need to cancel it or not
+
+// Logic to be done here
+// 1. If we have any order already open, we need to check the threshol to cancel or not.
+// 2. If the threshold is met, we cancel the order and set a new one
+// 3. if the threshold is not met, we leave it as is
+// 4. after the order is created, we need to check if the orders has been executed,
+// maybe here inside the loop or outside of the loop in another goroutine?
+// this goroutine will check if when the orden has been executed or canceled.
+// if the order has been executed, we need to create the same order with the opposite side
+// at binance.
+// }
 
 func (app *App) setupNotifyService() {
 	app.Notify = ntfy.NewNtfy()
 	app.Notify.SendMsg("Server is up - NTFY Test", "Server is up - LoggerErr Test", false)
-}
-
-func (app *App) hasArbitrageOrder() bool {
-	return (app.ArbitrageOrder == nil)
 }
