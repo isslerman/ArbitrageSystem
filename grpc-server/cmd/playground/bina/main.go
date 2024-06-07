@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"grpc-server/internal/cex"
-	"grpc-server/internal/cex/data"
+	"grpc-server/pkg/data"
 	"log/slog"
 )
 

@@ -6,7 +6,7 @@ import (
 	"log"
 	"os"
 
-	"grpc-server/internal/cex/data"
+	"grpc-server/pkg/data"
 
 	"github.com/go-resty/resty/v2"
 	"github.com/joho/godotenv"

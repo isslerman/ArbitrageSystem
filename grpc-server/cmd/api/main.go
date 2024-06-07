@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"grpc-server/infra/grpc"
 	"grpc-server/infra/ntfy"
 	"grpc-server/internal/cex"
 	"grpc-server/pkg/data"
@@ -21,7 +22,7 @@ type App struct {
 	gRpcPort   string     // port to listen on for gRPC requests
 	Notify     *ntfy.Ntfy // Notify sends notifications to mobile
 	DryRunMode bool       // Send the orders or not
-	ac         *data.ArbitrageControl
+	ac         *ArbitrageControl
 	baseToken  string // base token to use for arbitrage
 	quoteToken string // quote token to use for arbitrage
 }
@@ -56,8 +57,8 @@ func main() {
 	app.DB.SaveLoggerErr("Server is up - LoggerErr Test")
 
 	// Register the gRPC Server
-	srv := NewOrderServer()
-	go app.gRPCListen(srv)
+	srv := grpc.NewOrderServer()
+	go grpc.GRPCListen(srv, app.gRpcPort)
 	ob := srv.Models.OrderBook
 
 	// Strategie config and load
@@ -66,7 +67,7 @@ func main() {
 	aSymbol := fmt.Sprintf("%s%s", app.baseToken, app.quoteToken)
 	bSymbol := fmt.Sprintf("%s_%s", app.baseToken, app.quoteToken)
 	// creating a new AC
-	app.ac, err = data.NewArbitrageControl(cexAsk, cexBid, aSymbol, bSymbol)
+	app.ac, err = NewArbitrageControl(cexAsk, cexBid, aSymbol, bSymbol, app.DB)
 	if err != nil {
 		log.Fatal(err)
 	}

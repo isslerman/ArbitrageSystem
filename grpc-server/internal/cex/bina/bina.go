@@ -9,7 +9,7 @@ import (
 	"os"
 	"strings"
 
-	"grpc-server/internal/cex/data"
+	"grpc-server/pkg/data"
 
 	"github.com/adshao/go-binance/v2"
 	"github.com/joho/godotenv"

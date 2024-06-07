@@ -2,8 +2,8 @@ package cex
 
 import (
 	"grpc-server/internal/cex/bina"
-	"grpc-server/internal/cex/data"
 	"grpc-server/internal/cex/ripi"
+	"grpc-server/pkg/data"
 )
 
 // ID represents different exchanges

@@ -1,7 +1,7 @@
 package bina
 
 import (
-	"grpc-server/internal/cex/data"
+	"grpc-server/pkg/data"
 	"testing"
 )
 

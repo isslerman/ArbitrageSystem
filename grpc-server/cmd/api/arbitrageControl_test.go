@@ -2,6 +2,7 @@ package main
 
 import (
 	"grpc-server/internal/cex"
+	"grpc-server/pkg/data"
 	"testing"
 )
 
@@ -13,7 +14,7 @@ func Test_NewArbitrageControl(t *testing.T) {
 	bSymbol := "SOL_BRL"
 
 	// creating a new AC
-	ac, err := NewArbitrageControl(cexAsk, cexBid, aSymbol, bSymbol)
+	ac, err := NewArbitrageControl(cexAsk, cexBid, aSymbol, bSymbol, nil)
 	if err != nil {
 		t.Errorf("error creating ArbitrageControl: %d", err)
 	}
@@ -30,18 +31,18 @@ func Test_hasAskOpenOrders(t *testing.T) {
 	bSymbol := "SOLBRL"
 
 	// creating a new AC
-	ac, err := NewArbitrageControl(cexAsk, cexBid, aSymbol, bSymbol)
+	ac, err := NewArbitrageControl(cexAsk, cexBid, aSymbol, bSymbol, nil)
 	if err != nil {
 		t.Errorf("error creating ArbitrageControl: %d", err)
 	}
 
 	// create a new askopenorder
-	ao, err := NewAskOpenOrder(0.1, 9999.00, aSymbol, "limit")
+	ao, err := data.NewAskOpenOrder(0.1, 9999.00, aSymbol, "limit")
 	if err != nil {
 		t.Errorf("error creating newaskopenorder, %s", err)
 	}
 
-	_, err = ac.createLimitOrder(OpenOrder(ao), "ask")
+	_, err = ac.createLimitOrder(data.OpenOrder(ao), "ask")
 	if err != nil {
 		t.Errorf("error creating limit order, %s", err)
 	}
@@ -61,19 +62,19 @@ func Test_createLimitOrder(t *testing.T) {
 	aSymbol := "SOL_BRL"
 	bSymbol := "SOLBRL"
 
-	ao, err := NewAskOpenOrder(0.1, 9999.00, aSymbol, "limit")
+	ao, err := data.NewAskOpenOrder(0.1, 9999.00, aSymbol, "limit")
 	if err != nil {
 		t.Errorf("error creating newaskopenorder, %s", err)
 	}
 
 	// creating a new AC
-	ac, err := NewArbitrageControl(cexAsk, cexBid, aSymbol, bSymbol)
+	ac, err := NewArbitrageControl(cexAsk, cexBid, aSymbol, bSymbol, nil)
 	if err != nil {
 		t.Errorf("error creating ArbitrageControl: %d", err)
 	}
 
 	// create a limit order on the ask side
-	_, err = ac.createLimitOrder(OpenOrder(ao), "ask")
+	_, err = ac.createLimitOrder(data.OpenOrder(ao), "ask")
 	if err != nil {
 		t.Errorf("error creating ask order: %d", err)
 	}
@@ -103,22 +104,22 @@ func Test_TryToCreateTwoLimitOrder(t *testing.T) {
 	aSymbol := "SOL_BRL"
 	bSymbol := "SOLBRL"
 
-	ao, err := NewAskOpenOrder(0.1, 9999.00, aSymbol, "limit")
+	ao, err := data.NewAskOpenOrder(0.1, 9999.00, aSymbol, "limit")
 	if err != nil {
 		t.Errorf("error creating newaskopenorder, %s", err)
 	}
 
 	// creating a new AC
-	ac, err := NewArbitrageControl(cexAsk, cexBid, aSymbol, bSymbol)
+	ac, err := NewArbitrageControl(cexAsk, cexBid, aSymbol, bSymbol, nil)
 	if err != nil {
 		t.Errorf("error creating ArbitrageControl: %d", err)
 	}
 
-	_, err = ac.createLimitOrder(OpenOrder(ao), "ask")
+	_, err = ac.createLimitOrder(data.OpenOrder(ao), "ask")
 	if err != nil {
 		t.Errorf("error creating ask order: %d", err)
 	}
-	_, err = ac.createLimitOrder(OpenOrder(ao), "ask")
+	_, err = ac.createLimitOrder(data.OpenOrder(ao), "ask")
 	if err.Error() != "ask order already created and open" {
 		t.Errorf("error creating second ask order: %d", err)
 	}
