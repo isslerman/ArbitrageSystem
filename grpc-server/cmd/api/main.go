@@ -148,12 +148,11 @@ func (app *App) strategyArbitrageContol(ba, bb *data.Order, spread float64) {
 	// creating the new askorder received
 	a, err := data.NewAskOpenOrder(ba.Volume, ba.PriceVET, app.ac.AskSymbol, "sell")
 	if err != nil {
-		err := fmt.Sprintf("[SAC]Error creting NewAskOpenOrder [%s] - %f, %f, %s, sell", ba.ID, ba.Volume, ba.PriceVET, app.ac.AskSymbol)
+		err := fmt.Sprintf("[SAC]Error creating NewAskOpenOrder [%s] - %f, %f, %s, sell", ba.ID, ba.Volume, ba.PriceVET, app.ac.AskSymbol)
 		app.DB.SaveLoggerErr(err)
 		return
 	}
 	app.ac.AskOpenOrder(a)
-	_ = ba
 	_ = bb
 	_ = spread
 }

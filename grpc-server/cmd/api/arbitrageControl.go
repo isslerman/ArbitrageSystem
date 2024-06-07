@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"grpc-server/internal/cex"
 	"grpc-server/pkg/data"
 	"grpc-server/pkg/repository"
@@ -55,35 +56,50 @@ func (ao *ArbitrageControl) validate() error {
 
 // set a new value received for the AskOpenOrder
 func (ao *ArbitrageControl) AskOpenOrder(a data.AskOpenOrder) {
-	// run the new order received ?
 	// is there any ask order created?
 	if !ao.hasAskOpenOrders() {
-		_, err := ao.createLimitOrder(data.OpenOrder(a), "sell")
-		if err != nil {
-			slog.Error("error creating limit order %s", err)
-			return
-			// TODO: handle error
+		if !ao.Dryrun {
+			_, err := ao.createLimitOrder(data.OpenOrder(a), "sell")
+			if err != nil {
+				// source, msg, context to help
+				err := fmt.Sprintf("AskOpenOrder, error creating limit order, %s, %v", err, a)
+				ao.DB.SaveLoggerErr(err)
+				return
+				// TODO: handle error
+			}
+		} else {
+			info := fmt.Sprintf("createLimitOrder, dryrun, %v", a)
+			ao.DB.SaveLoggerInfo(info)
 		}
 		ao.AskOrder = a
 	} else {
 		// check if the new price is inside the range of the threshold
 		// TODO: change this to a method
 		if a.Price <= ao.AskOrder.Price*ao.Threshold {
-			// TODO: handle info log
+			info := fmt.Sprintf("AskOpenOrder, price inside threshold, %f, %f", a.Price, ao.Threshold)
+			ao.DB.SaveLoggerInfo(info)
 			return
 		} else {
 			// if dryrun is TRUE we don't execute orders to cex
 			if !ao.Dryrun {
 				err := ao.cancelAllAskOrders()
 				if err != nil {
-					slog.Error("error cancelling all ask orders %s", err)
+					err := fmt.Sprintf("cancelAllAskOrders, error cancelling all ask orders, %s", err)
+					ao.DB.SaveLoggerErr(err)
+					return
 				}
 				_, err = ao.createLimitOrder(data.OpenOrder(a), "sell")
 				if err != nil {
-					slog.Error("error creating limit order %s", err)
+					err := fmt.Sprintf("createLimitOrder, error creating limit order, %s, %v", err, a)
+					ao.DB.SaveLoggerErr(err)
 					return
 					// TODO: handle error
 				}
+			} else {
+				info := fmt.Sprintf("cancelAllAskOrders, dryrun, %v", a)
+				ao.DB.SaveLoggerInfo(info)
+				info = fmt.Sprintf("createLimitOrder, dryrun, %v", a)
+				ao.DB.SaveLoggerInfo(info)
 			}
 			// TODO: handle info log
 		}
