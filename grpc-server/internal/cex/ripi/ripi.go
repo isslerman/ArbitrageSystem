@@ -162,12 +162,8 @@ func (e *Ripi) CreateOrder(o *data.OrdersCreateRequest) (string, error) {
 	fmt.Println("RIPI OrdersCreate")
 	fmt.Printf("DEBUG: endpoint: %s\n", endpoint)
 
-	// Create a Resty Client
-	client := resty.New()
-
 	var res ripiResponse
-	resp, err := client.R().
-		// SetHeader("Content-Type", "application/json").
+	resp, err := e.client.R().
 		SetHeader("Authorization", e.key).
 		SetBody(o).
 		SetResult(&res).
@@ -182,6 +178,10 @@ func (e *Ripi) CreateOrder(o *data.OrdersCreateRequest) (string, error) {
 	}
 
 	if resp.StatusCode() == 400 {
+		return "", errors.New(res.Message)
+	}
+
+	if resp.StatusCode() == 401 {
 		return "", errors.New(res.Message)
 	}
 

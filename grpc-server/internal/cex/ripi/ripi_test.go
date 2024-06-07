@@ -15,6 +15,8 @@ func Test_CancelAllOrders(t *testing.T) {
 	}
 }
 
+// to force withou cache
+// go test -count=1 ./...
 func Test_CreateOrder(t *testing.T) {
 	// New instance of the exchange RIPI
 	ripi := New()
