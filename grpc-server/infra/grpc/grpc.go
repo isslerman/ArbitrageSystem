@@ -2,6 +2,7 @@ package grpc
 
 import (
 	"context"
+	"fmt"
 	"grpc-server/internal/pb/orders"
 	"grpc-server/pkg/data"
 	"log"
@@ -59,7 +60,7 @@ func (o *OrderServer) WriteOrder(ctx context.Context, req *orders.OrderRequest) 
 
 func GRPCListen(os *OrderServer, port string) {
 	// grpc server listeing on a tcp port
-	lis, err := net.Listen("tcp", port)
+	lis, err := net.Listen("tcp", fmt.Sprintf(":%s", port))
 	if err != nil {
 		log.Fatalf("Failed to listen for gRPC: %v", err)
 	}

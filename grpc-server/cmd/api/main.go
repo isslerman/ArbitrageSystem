@@ -53,8 +53,8 @@ func main() {
 	app.DB = dbrepo.NewPostgresDBRepo(conn)
 
 	// Initial checkup
-	app.DB.SaveLoggerInfo("Server is up - LoggerInfo Test")
-	app.DB.SaveLoggerErr("Server is up - LoggerErr Test")
+	app.DB.SaveLoggerInfo("---> SERVER STARTING <---")
+	app.DB.SaveLoggerErr("---> SERVER STARTING <---")
 
 	// Register the gRPC Server
 	srv := grpc.NewOrderServer()
@@ -142,13 +142,13 @@ func (app *App) run(ob *data.OrderBook) {
 
 func (app *App) strategyArbitrageContol(ba, bb *data.Order, spread float64) {
 	// Log info
-	info := fmt.Sprintf("[SAC]New Price received [%s] - PriceVET, %f, Vol, %f", ba.ID, ba.PriceVET, ba.Volume)
+	info := fmt.Sprintf("[New Price received] [%s] - PriceVET, %f, Vol, %f", ba.ID, ba.PriceVET, ba.Volume)
 	app.DB.SaveLoggerInfo(info)
 
 	// creating the new askorder received
-	a, err := data.NewAskOpenOrder(ba.Volume, ba.PriceVET, app.ac.AskSymbol, "sell")
+	a, err := data.NewAskOpenOrder(ba.Volume, ba.PriceVET, app.ac.AskSymbol, "limit")
 	if err != nil {
-		err := fmt.Sprintf("[SAC]Error creating NewAskOpenOrder [%s] - %f, %f, %s, sell", ba.ID, ba.Volume, ba.PriceVET, app.ac.AskSymbol)
+		err := fmt.Sprintf("[Error creating NewAskOpenOrder] [%s] - %f, %f, %s, sell, %s", ba.ID, ba.Volume, ba.PriceVET, app.ac.AskSymbol, err)
 		app.DB.SaveLoggerErr(err)
 		return
 	}
@@ -157,33 +157,10 @@ func (app *App) strategyArbitrageContol(ba, bb *data.Order, spread float64) {
 	_ = spread
 }
 
-// execOrder - receives the best ask and best bid and execute the order
-// when the spread is higher than 0.4
-// func (app *App) execOrder(ba, bb *data.Order, spread float64) {
-// validations before exec the order
-
-// getting the same volume (low) to use in both
-// if ba.Volume <= bb.Volume {
-// 	bb.Volume = ba.Volume
-// } else {
-// 	ba.Volume = bb.Volume
-// }
-
-// 1. check for open orders
-// If there is already an open order, we need to check if we need to cancel it or not
-
-// Logic to be done here
-// 1. If we have any order already open, we need to check the threshol to cancel or not.
-// 2. If the threshold is met, we cancel the order and set a new one
-// 3. if the threshold is not met, we leave it as is
-// 4. after the order is created, we need to check if the orders has been executed,
-// maybe here inside the loop or outside of the loop in another goroutine?
-// this goroutine will check if when the orden has been executed or canceled.
-// if the order has been executed, we need to create the same order with the opposite side
-// at binance.
-// }
-
+// setupNotifyService send a msg to ntfy mobile app
 func (app *App) setupNotifyService() {
-	app.Notify = ntfy.NewNtfy()
-	app.Notify.SendMsg("Server is up - NTFY Test", "Server is up - LoggerErr Test", false)
+	// TEMPORARILY DISABLED - REMOVE THE TWO COMMENTS TO ENABLE
+
+	// app.Notify = ntfy.NewNtfy()
+	// app.Notify.SendMsg("Server is up - NTFY Test", "Server is up - LoggerErr Test", false)
 }
