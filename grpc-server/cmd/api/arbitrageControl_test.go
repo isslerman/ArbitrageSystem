@@ -125,3 +125,30 @@ func Test_TryToCreateTwoLimitOrder(t *testing.T) {
 	}
 	ac.cancelAllAskOrders()
 }
+
+func Test_isInsideThreshold(t *testing.T) {
+	var tests = []struct {
+		name         string
+		base         float64
+		threshold    float64
+		valueToCheck float64
+		expected     bool
+	}{
+		{"inside threshold 1", 10, 1.00, 10, true},
+		{"inside threshold 2", 100, 0.00, 100, true},
+		{"outside threshold 3", 100, 0.00, 100.01, false},
+		{"on border up threshold", 10, 1.00, 10.1, true},
+		{"on border down threshold", 10, 1.00, 9.9, true},
+		{"outside up threshold", 10, 1.00, 10.2, false},
+		{"outside down threshold", 10, 1.00, 9.87, false},
+		{"outside negative threshold", 10, 1.00, -3, false},
+		{"outside zero threshold", 10, 1.00, -3, false},
+	}
+
+	for _, e := range tests {
+		result := isInsideThreshold(e.base, e.threshold, e.valueToCheck)
+		if result != e.expected {
+			t.Errorf("%s: return %t, but expected %t", e.name, result, e.expected)
+		}
+	}
+}
