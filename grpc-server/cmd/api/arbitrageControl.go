@@ -1,9 +1,10 @@
-package data
+package main
 
 import (
 	"errors"
 	"grpc-server/internal/cex"
 	"grpc-server/internal/cex/data"
+	"grpc-server/pkg/data"
 	"log/slog"
 	"time"
 )
@@ -25,7 +26,7 @@ const (
 )
 
 // OpenOrder is an order that can be sent to an exchange.
-type AskOpenOrder OpenOrder
+type AskOpenOrder data.OpenOrder
 type BidOpenOrder OpenOrder
 
 // ArbitrageControl is who control the arbitrage between two exchanges (CEX)
