@@ -40,7 +40,8 @@ func main() {
 	app.setupNotifyService()
 	app.DryRunMode = true
 
-	flag.StringVar(&app.DSN, "dsn", "host=aws-postgre-db.cjwmyk2c0zku.sa-east-1.rds.amazonaws.com port=5432 user=aws_postgre_db password=rfq6PlYM1NzFgmZm9QZ1 dbname=arbitrage_system sslmode=require timezone=UTC connect_timeout=5", "Posgtres connection")
+	// setting up the config - move dsn to .env file later
+	flag.StringVar(&app.DSN, "dsn", "host=host port=5432 user=aws_postgre_db password=password dbname=dbname sslmode=require timezone=UTC connect_timeout=5", "Posgtres connection")
 	flag.StringVar(&app.gRpcPort, "grpcPort", "50001", "gRPC Port Server Port")
 	flag.StringVar(&app.baseToken, "base", "SOL", "base token to use for arbitrage (base/quote)")
 	flag.StringVar(&app.quoteToken, "quote", "BRL", "quote token to use for arbitrage (base/quote)")
