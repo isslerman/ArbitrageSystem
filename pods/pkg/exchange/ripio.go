@@ -31,8 +31,8 @@ func NewRipio() *Ripio {
 		apiURL:   "https://api.ripiotrade.co/v4/public/orders/level-2?pair=SOL_BRL",
 		Id:       "RIPI",
 		Name:     "Ripio",
-		FeeTaker: 0.0050,
-		FeeMaker: 0.0025,
+		FeeTaker: 0.0050, // 0.50% // Nivel2 - 0.45
+		FeeMaker: 0.0025, // 0.25% // Nivel2 - 0.21
 	}
 }
 
