@@ -54,6 +54,6 @@ func (grpc *Config) SendViaGRPC(orderAsk, orderBid *orders.Order) {
 	})
 
 	if err != nil {
-		log.Fatal("Error WriteOrder: ", err)
+		log.Println("Error trying to send order. Msg lost. Server off: ", err)
 	}
 }

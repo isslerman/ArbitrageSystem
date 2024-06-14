@@ -11,6 +11,9 @@ import (
 	"grpc-server/pkg/repository/dbrepo"
 	"log"
 	"log/slog"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 )
 
@@ -64,21 +67,25 @@ func main() {
 	// Strategie config and load
 	cexAsk := cex.InstanceRipi
 	cexBid := cex.InstanceBina
-	aSymbol := fmt.Sprintf("%s%s", app.baseToken, app.quoteToken)
-	bSymbol := fmt.Sprintf("%s_%s", app.baseToken, app.quoteToken)
+	aSymbol := fmt.Sprintf("%s_%s", app.baseToken, app.quoteToken) // ask exchange A SOL_BRL <base_quote>
+	bSymbol := fmt.Sprintf("%s%s", app.baseToken, app.quoteToken)  // bid exchange B SOLBRL <basequote>
 	// creating a new AC
-	app.ac, err = NewArbitrageControl(cexAsk, cexBid, aSymbol, bSymbol, app.DB)
+	app.ac, err = NewArbitrageControl(cexAsk, cexBid, aSymbol, bSymbol, app.DB, app.Notify)
 	if err != nil {
 		log.Fatal(err)
 	}
+	app.ac.Dryrun = false
 
 	pairInfo := fmt.Sprintf("Arbitrage pair is %s/%s", app.baseToken, app.quoteToken)
 	slog.Info(pairInfo)
 	slog.Info("Server is up and running.")
 	app.DB.SaveLoggerInfo(pairInfo)
 	app.DB.SaveLoggerInfo("Server is up and running.")
-	app.run(ob)
 
+	// Run our program under a go routine
+	go app.run(ob)
+
+	app.gracefullyShutdown()
 }
 
 // bestOrder receives the OrderBook over gRPC
@@ -138,6 +145,38 @@ func (app *App) run(ob *data.OrderBook) {
 		// fmt.Printf("OB: [%d] orders\n", ob.SizeAsk())
 		// fmt.Printf("OB: [%d] orders\n", ob.SizeAsk())
 	}
+}
+
+func (app *App) gracefullyShutdown() {
+	// channel of type os.Signal (signals of OS System)
+	// we will receive ctrl-c signals
+	stop := make(chan os.Signal, 1)
+	// register the signals that we want to listen for
+	signal.Notify(stop, os.Interrupt, syscall.SIGTERM, syscall.SIGINT)
+	// waiting for some signal
+	<-stop
+
+	// gracefully shutdown start
+	msg := "ALERT: Shutting down server..."
+	app.DB.SaveLoggerInfo(msg)
+	fmt.Println(msg)
+	msg = "ALERT: Closing all open orders."
+	app.DB.SaveLoggerInfo(msg)
+	fmt.Println(msg)
+
+	// cancel all open orders before close
+	err := app.ac.cancelAllAskOrders()
+	if err != nil {
+		fmt.Println("Server stopped")
+		app.DB.SaveLoggerErr("WARNING: Error canceling all orders, check the exchange for open orders.")
+	}
+	app.DB.SaveLoggerInfo("No error, all orders cancelled.")
+
+	// BYE MSG
+	msg = "---> SERVER STOPPED <---"
+	app.DB.SaveLoggerInfo(msg)
+	app.DB.SaveLoggerErr(msg)
+	fmt.Println(msg)
 }
 
 func (app *App) strategyArbitrageContol(ba, bb *data.Order, spread float64) {

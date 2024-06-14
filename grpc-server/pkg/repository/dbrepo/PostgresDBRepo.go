@@ -29,8 +29,9 @@ func (c *PostgresDBRepo) SaveOrderHistory(spread float64, ask *data.AskOrder, bi
 }
 
 func (c *PostgresDBRepo) SaveLoggerInfo(log string) {
-	// id := uuid.New().String()
+	log = truncate(log, 250)
 	createdAt := time.Now()
+
 	_, err := c.db.Exec(`INSERT INTO log_info (info, created_at) 
     VALUES (
         $1, $2
@@ -43,8 +44,9 @@ func (c *PostgresDBRepo) SaveLoggerInfo(log string) {
 }
 
 func (c *PostgresDBRepo) SaveLoggerErr(log string) {
-	// id := uuid.New().String()
+	log = truncate(log, 250)
 	createdAt := time.Now()
+
 	_, err := c.db.Exec(`INSERT INTO log_error (err, created_at) 
     VALUES (
         $1, $2
@@ -52,5 +54,14 @@ func (c *PostgresDBRepo) SaveLoggerErr(log string) {
 		log, createdAt)
 	if err != nil {
 		slog.Error("Error: LoggerErrRepo: can't insert Error Log - ", err)
+	}
+}
+
+func truncate(s string, n int) string {
+	// truncating to 250 chars
+	if len(s) > n {
+		return s[:250]
+	} else {
+		return s
 	}
 }

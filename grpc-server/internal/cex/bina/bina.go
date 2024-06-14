@@ -45,6 +45,12 @@ func New() *Bina {
 
 	client := binance.NewClient(apiKey, secretKey)
 
+	_, err = client.NewGetAccountService().Do(context.Background())
+	if err != nil {
+		println("FATAL ERROR: BINA API ERROR")
+		log.Fatal(err)
+	}
+
 	// Return Ripi with default values
 	return &Bina{
 		apiBaseURL: "https://api.binance.com/api/v3/",
@@ -109,6 +115,11 @@ func (e *Bina) CreateOrder(o *data.OrdersCreateRequest) (string, error) {
 
 	qty := fmt.Sprint(o.Amount)
 	price := fmt.Sprint(o.Price)
+
+	// validation - amount less than min allowed
+	if o.Amount < 0.001 {
+		return "", fmt.Errorf("[error creating order] - Bina amount less than min allowed. - %v", o)
+	}
 
 	order, err := e.client.NewCreateOrderService().
 		Symbol(o.Pair).

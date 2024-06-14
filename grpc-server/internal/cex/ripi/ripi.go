@@ -95,15 +95,16 @@ func (e *Ripi) Id() string {
 func (e *Ripi) CancelAllOrders() error {
 	endpoint := "orders/all"
 	endpoint = fmt.Sprintf("%s%s", e.apiBaseURL, endpoint)
-	fmt.Println("RIPI CancelAllOrders")
-	fmt.Printf("DEBUG: endpoint: %s\n", endpoint)
-	fmt.Printf("DEBUG: key: %s\n", e.key)
+	// fmt.Println("RIPI CancelAllOrders")
+	// fmt.Printf("DEBUG: endpoint: %s\n", endpoint)
+	// fmt.Printf("DEBUG: key: %s\n", e.key)
 
 	body := `{
 		"pair": "SOL_BRL"
 	}`
 
-	var res ripiResponse
+	// response: {"data":[{"order_id":"30F9964D-CA07-44CF-8A7A-D06138A073FE","pair_code":"BRLSOL","success":true}],"error_code":null,"message":null}
+	var res cancelAllOrdersResponse
 	resp, err := e.client.R().
 		SetHeader("Content-Type", "application/json").
 		SetHeader("Authorization", e.key).
@@ -113,26 +114,40 @@ func (e *Ripi) CancelAllOrders() error {
 		EnableTrace().
 		Delete(endpoint)
 
+	// debug
+	fmt.Println("DEBUG| CancelAllOrders() err:", err)
 	printResp(resp, err)
-	// printRespTraceInfo(resp)
-	if resp.StatusCode() == 200 {
-		return nil
-	}
 
-	if resp.StatusCode() == 400 {
-		// No orders to cancel
-		if res.ErrorCode == 40022 {
-			return nil
-		}
-
-		return errors.New(res.Message)
-	}
-
+	// error - not executed
 	if err != nil {
 		return err
 	}
 
-	return nil
+	// Success:
+	// return error nil, status code 400, body: {"error_code":40022,"message":"No orders to cancel"}
+	// return error nil, status code 200, body: {"data":[{"order_id":"042BDF94-7073-4DD9-9106-E567628C99F9","pair_code":"BRLSOL","success":true}],"error_code":null,"message":null}
+
+	// OK - No orders to cancel
+	if resp.StatusCode() == 400 && res.ErrorCode == 40022 {
+		return nil
+	}
+
+	if resp.StatusCode() == 200 && res.ErrorCode == 0 {
+		return nil
+	}
+
+	return fmt.Errorf("error: StatusCode: %d - %d - %s", resp.StatusCode(), res.ErrorCode, res.Message)
+}
+
+// {"data":[{"order_id":"30F9964D-CA07-44CF-8A7A-D06138A073FE","pair_code":"BRLSOL","success":true}],"error_code":null,"message":null}
+type cancelAllOrdersResponse struct {
+	Data []struct {
+		OrderID  string `json:"order_id"`
+		PairCode string `json:"pair_code"`
+		Success  bool   `json:"success"`
+	} `json:"data"`
+	ErrorCode int    `json:"error_code"`
+	Message   string `json:"message"`
 }
 
 // ripiResponse represents the structure of the JSON response.
@@ -159,8 +174,8 @@ type ripidata struct {
 func (e *Ripi) CreateOrder(o *data.OrdersCreateRequest) (string, error) {
 	endpoint := "orders"
 	endpoint = fmt.Sprintf("%s%s", e.apiBaseURL, endpoint)
-	fmt.Println("RIPI OrdersCreate")
-	fmt.Printf("DEBUG: endpoint: %s\n", endpoint)
+	// fmt.Println("RIPI OrdersCreate")
+	// fmt.Printf("DEBUG: endpoint: %s\n", endpoint)
 
 	var res ripiResponse
 	resp, err := e.client.R().
@@ -171,6 +186,8 @@ func (e *Ripi) CreateOrder(o *data.OrdersCreateRequest) (string, error) {
 		EnableTrace().
 		Post(endpoint)
 
+	// debug
+	fmt.Println("DEBUG| CreateOrder() order:", o)
 	printResp(resp, err)
 	// printRespTraceInfo(resp)
 	if resp.StatusCode() == 200 {

@@ -9,7 +9,7 @@ import (
 
 func main() {
 
-	// New instance of the exchange RIPI
+	// New instance of the exchange BINA - Binance
 	bina := cex.New(cex.InstanceBina)
 
 	order := &data.OrdersCreateRequest{

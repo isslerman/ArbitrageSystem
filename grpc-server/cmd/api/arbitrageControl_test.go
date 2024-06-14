@@ -14,7 +14,7 @@ func Test_NewArbitrageControl(t *testing.T) {
 	bSymbol := "SOL_BRL"
 
 	// creating a new AC
-	ac, err := NewArbitrageControl(cexAsk, cexBid, aSymbol, bSymbol, nil)
+	ac, err := NewArbitrageControl(cexAsk, cexBid, aSymbol, bSymbol, nil, nil)
 	if err != nil {
 		t.Errorf("error creating ArbitrageControl: %d", err)
 	}
@@ -31,7 +31,7 @@ func Test_hasAskOpenOrders(t *testing.T) {
 	bSymbol := "SOLBRL"
 
 	// creating a new AC
-	ac, err := NewArbitrageControl(cexAsk, cexBid, aSymbol, bSymbol, nil)
+	ac, err := NewArbitrageControl(cexAsk, cexBid, aSymbol, bSymbol, nil, nil)
 	if err != nil {
 		t.Errorf("error creating ArbitrageControl: %d", err)
 	}
@@ -68,7 +68,7 @@ func Test_createLimitOrder(t *testing.T) {
 	}
 
 	// creating a new AC
-	ac, err := NewArbitrageControl(cexAsk, cexBid, aSymbol, bSymbol, nil)
+	ac, err := NewArbitrageControl(cexAsk, cexBid, aSymbol, bSymbol, nil, nil)
 	if err != nil {
 		t.Errorf("error creating ArbitrageControl: %d", err)
 	}
@@ -110,7 +110,7 @@ func Test_TryToCreateTwoLimitOrder(t *testing.T) {
 	}
 
 	// creating a new AC
-	ac, err := NewArbitrageControl(cexAsk, cexBid, aSymbol, bSymbol, nil)
+	ac, err := NewArbitrageControl(cexAsk, cexBid, aSymbol, bSymbol, nil, nil)
 	if err != nil {
 		t.Errorf("error creating ArbitrageControl: %d", err)
 	}

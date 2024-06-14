@@ -10,9 +10,31 @@ func Test_CancelAllOrders(t *testing.T) {
 	ripi := New()
 	err := ripi.CancelAllOrders()
 
+	// no orders to cancel
 	if err != nil {
 		t.Errorf("CancelAllOrders returned an error: %d", err)
 	}
+
+	order := &data.OrdersCreateRequest{
+		Amount: 0.10,
+		Pair:   "SOL_BRL",
+		Price:  9999.00,
+		Side:   "sell",
+		Type:   "limit",
+	}
+
+	// creating an order
+	_, err = ripi.CreateOrder(order)
+	if err != nil {
+		t.Errorf("error creating an order: %d", err)
+	}
+
+	// cancel all orders
+	err = ripi.CancelAllOrders()
+	if err != nil {
+		t.Errorf("CancelAllOrders returned an error: %d", err)
+	}
+
 }
 
 // to force withou cache

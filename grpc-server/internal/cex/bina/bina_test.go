@@ -7,8 +7,8 @@ import (
 
 func Test_CancelAllOrders(t *testing.T) {
 	// exchange instance
-	ripi := New()
-	err := ripi.CancelAllOrders()
+	bina := New()
+	err := bina.CancelAllOrders()
 
 	if err != nil {
 		t.Errorf("CancelAllOrders returned an error: %d", err)
@@ -17,24 +17,24 @@ func Test_CancelAllOrders(t *testing.T) {
 
 func Test_OrdersCreate(t *testing.T) {
 	// New instance of the exchange RIPI
-	ripi := New()
+	bina := New()
 
 	order := &data.OrdersCreateRequest{
 		Amount: 0.10,
 		Pair:   "SOLBRL",
-		Price:  700.00,
+		Price:  700.0,
 		Side:   "buy",
 		Type:   "limit",
 	}
 
 	// creating an order
-	_, err := ripi.CreateOrder(order)
+	_, err := bina.CreateOrder(order)
 	if err != nil {
 		t.Errorf("error creating an order: %d", err)
 	}
 
 	// cancel all orders
-	err = ripi.CancelAllOrders()
+	err = bina.CancelAllOrders()
 	if err != nil {
 		t.Errorf("CancelAllOrders returned an error: %d", err)
 	}

@@ -3,7 +3,9 @@ package main
 import (
 	"errors"
 	"fmt"
+	"grpc-server/infra/ntfy"
 	"grpc-server/internal/cex"
+	"grpc-server/internal/wsconsumer"
 	"grpc-server/pkg/data"
 	"grpc-server/pkg/repository"
 	"log/slog"
@@ -27,9 +29,12 @@ type ArbitrageControl struct {
 	Profit         float64           // how much is the profit/distance from the bestask price received
 	Dryrun         bool              // if true, it will not send the orders to the exchanges
 	DB             repository.DatabaseRepo
+	Notify         *ntfy.Ntfy // Notify sends notifications to mobile
+	consumer       *wsconsumer.WSConsumer
+	orderFilled    chan bool
 }
 
-func NewArbitrageControl(excA, excB cex.ID, aSymbol, bSymbol string, db repository.DatabaseRepo) (*ArbitrageControl, error) {
+func NewArbitrageControl(excA, excB cex.ID, aSymbol, bSymbol string, db repository.DatabaseRepo, ntfy *ntfy.Ntfy) (*ArbitrageControl, error) {
 	ac := &ArbitrageControl{
 		AskOrderStatus: data.StateWaiting, // state of the ask order
 		BidOrderStatus: data.StateWaiting, // state of the bid order
@@ -37,17 +42,26 @@ func NewArbitrageControl(excA, excB cex.ID, aSymbol, bSymbol string, db reposito
 		BidSymbol:      bSymbol,           // exchange that owns the bid order
 		cexAsk:         cex.New(excA),     // exchange A (sell) - ask order
 		cexBid:         cex.New(excB),     // exchange B (buy) - bid order
-		Threshold:      0.2,               // 0.2 = 0.2%
-		Profit:         0.4,               // 0.4 = 0.4% profit
-		createdAt:      time.Now(),        // time the arbitrage was created
-		Dryrun:         true,              // if true, it will not send the orders to the exchanges
-		DB:             db,
+		Threshold:      0.15,               // 0.2 = 0.2%
+		// This profit need sum the fee of the selling exchange exchange A plus the profit that you want.
+		Profit:      0.90,       // 0.4 = 0.4% profit - Let's use 0.4 + 0.50 of fee = 0.9 - let's try 0.95
+		createdAt:   time.Now(), // time the arbitrage was created
+		Dryrun:      true,       // if true, it will not send the orders to the exchanges
+		DB:          db,
+		Notify:      ntfy,            // Notify sends notifications to mobile
+		orderFilled: make(chan bool), // channel to handle when the consumer have a full filled order.
 	}
 
 	err := ac.validate()
 	if err != nil {
 		return nil, err
 	}
+
+	// websocket consumer to watch monitor when the ask order is filled.
+	ac.consumer = wsconsumer.NewWSConsumer(db, ntfy, ac.cexBid, ac.orderFilled)
+	// start the consumer
+	go ac.consumer.Start()
+
 	return ac, nil
 }
 
@@ -59,13 +73,15 @@ func (ao *ArbitrageControl) validate() error {
 
 // set a new value received for the AskOpenOrder
 func (ao *ArbitrageControl) AskOpenOrder(a data.AskOpenOrder) {
+	// the price received here is the priceVET ( with fees )
 	// adjusting the price with the profit
 	a.Price = a.Price * (1 + (ao.Profit / 100))
+	a.Amount = 0.30
 	// is there any ask order created?
 	if !ao.hasAskOpenOrders() {
 		// !!! JOGAR O DRYRUN PARA DENTRO DAS FUNCOES, LOG FUNCIONA?
 		if !ao.Dryrun {
-			_, err := ao.createLimitOrder(data.OpenOrder(a), "sell")
+			_, err := ao.createLimitOrder(data.OpenOrder(a), "ask")
 			if err != nil {
 				// source, msg, context to help
 				err := fmt.Sprintf("[error creating limit order], %s, %v", err, a)
@@ -104,7 +120,7 @@ func (ao *ArbitrageControl) AskOpenOrder(a data.AskOpenOrder) {
 					return
 				}
 
-				_, err = ao.createLimitOrder(data.OpenOrder(a), "sell")
+				_, err = ao.createLimitOrder(data.OpenOrder(a), "ask")
 				if err != nil {
 					err := fmt.Sprintf("[error creating limit order], %s, %v", err, a)
 					ao.DB.SaveLoggerErr(err)
@@ -137,9 +153,9 @@ func (ao *ArbitrageControl) hasAskOpenOrders() bool {
 }
 
 // hasBidOpenOrders returns true if there is an ask order created and valid on the exchange
-func (ao *ArbitrageControl) hasBidOpenOrders() bool {
-	return ao.BidOrderStatus == data.StateCreated
-}
+// func (ao *ArbitrageControl) hasBidOpenOrders() bool {
+// 	return ao.BidOrderStatus == data.StateCreated
+// }
 
 // createLimitOrder creates a limit order on the exchange ask | bid
 // o OpenOrder
@@ -157,6 +173,8 @@ func (ao *ArbitrageControl) createLimitOrder(o data.OpenOrder, cexSide string) (
 	if cexSide != "ask" && cexSide != "bid" {
 		return "", errors.New("invalid cex side")
 	}
+
+	// { SOLBRL 0.015 867.254388 limit sell 1717899767}
 	order := &data.OrdersCreateRequest{
 		Amount: o.Amount,
 		Pair:   o.Pair,
@@ -178,6 +196,11 @@ func (ao *ArbitrageControl) createLimitOrder(o data.OpenOrder, cexSide string) (
 		ao.AskOrder.Price = order.Price
 		ao.AskOrder.Amount = order.Amount
 
+		// start go routine to watch when order was filled
+		go ao.limitOrderExecuted()
+
+		// notify the user that the order was created
+		// ao.Notify.SendMsg("Ask order created", "Ask order created", false)
 		return orderId, nil
 	} else if cexSide == "bid" {
 		orderId, err := ao.cexBid.CreateOrder(order)
@@ -212,4 +235,15 @@ func isInsideThreshold(base, threshold, valueToCheck float64) bool {
 	} else {
 		return false
 	}
+}
+
+// go routine to watch when the limit order was fully executed using the channel orderFilled
+func (ao *ArbitrageControl) limitOrderExecuted() {
+	ao.DB.SaveLoggerInfo("[limitOrderExecuted waiting limit order to be filled]")
+	// waiting for the channel
+	<-ao.orderFilled
+	ao.AskOrderStatus = data.StateWaiting
+	msg := fmt.Sprintf("Order executed. ASK RIPI - %v", ao.AskOrder)
+	ao.Notify.SendMsg("Order ASK executed", msg, false)
+	ao.DB.SaveLoggerInfo("[limitOrderExecuted limit order filled]")
 }
