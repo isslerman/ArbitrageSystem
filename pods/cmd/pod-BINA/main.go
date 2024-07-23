@@ -1,7 +1,10 @@
 package main
 
 import (
-	"flag"
+	"encoding/json"
+	"fmt"
+	"log"
+	"os"
 	"pods/infra/api"
 	"pods/pkg/exchange"
 	"pods/pkg/logger"
@@ -10,8 +13,13 @@ import (
 )
 
 type config struct {
-	port int
-	env  string
+	Name        string
+	Version     string
+	Port        int
+	BaseSymbol  string  `json:"base_symbol"`
+	QuoteSymbol string  `json:"quote_symbol"`
+	FeeTaker    float64 `json:"fee_taker"`
+	FeeMaker    float64 `json:"fee_maker"`
 }
 
 type application struct {
@@ -33,22 +41,31 @@ func main() {
 	// initiate our application
 	app := newApplication()
 
+	symbol := fmt.Sprintf("%s%s", app.config.BaseSymbol, app.config.QuoteSymbol)
 	// create the exchange instance to be injected into the application
-	e := exchange.NewBinance()
+	e := exchange.NewBinance(symbol, app.config.FeeTaker, app.config.FeeMaker)
 
 	// create apiSrv instance
-	apiSrv := api.NewServer(e, app.config.port, app.l)
+	apiSrv := api.NewServer(e, app.config.Port, app.l)
 	app.apiSrv = apiSrv
 	app.apiSrv.StartServer()
 }
 
-func (app *application) loadConfig() {
-	app.config.env = "development"
+func (app *application) loadConfig() error {
+	file, err := os.Open("config.json")
+	if err != nil {
+		log.Fatalf("Error loading config file, %s", err)
+	}
+	defer file.Close()
 
-	flag.StringVar(&app.Name, "name", "Binance", "CEX Binance Exchange")
-	flag.StringVar(&app.Version, "version", "1.0.0", "Pod Version")
-	flag.IntVar(&app.config.port, "port", 15000, "Pod API port")
-	flag.Parse()
+	decoder := json.NewDecoder(file)
+	err = decoder.Decode(&app.config)
+	if err != nil {
+		log.Fatalf("Error loading config file, %s", err)
+	}
 
+	// init logger
 	app.l = logger.Get(app.Name)
+
+	return nil
 }

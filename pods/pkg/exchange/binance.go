@@ -8,9 +8,11 @@ package exchange
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"pods/internal/data"
+	"pods/pkg/toolbox"
 	"strconv"
 	"time"
 )
@@ -25,13 +27,17 @@ type Binance struct {
 	CreatedAt int
 }
 
-func NewBinance() *Binance {
+func NewBinance(symbol string, feeT, feeM float64) *Binance {
+	if symbol == "" {
+		symbol = "SOLBRL" // default symbol
+	}
+
 	return &Binance{
-		apiURL:   "https://api.binance.com/api/v3/depth?limit=10&symbol=SOLBRL",
+		apiURL:   fmt.Sprintf("https://api.binance.com/api/v3/depth?limit=10&symbol=%s", symbol),
 		Id:       "BINA",
 		Name:     "Binance",
-		FeeTaker: 0.01 * 0.10, // 0,075% with BNB active
-		FeeMaker: 0.01 * 0.10,
+		FeeTaker: 0.01 * feeT, // 0,075% with BNB active
+		FeeMaker: 0.01 * feeM,
 	}
 }
 
@@ -53,14 +59,14 @@ func (e *Binance) BestOrder() (*data.Ask, *data.Bid, error) {
 
 	ask := &data.Ask{
 		Price:     priceAsk,
-		PriceVET:  priceAskVET,
+		PriceVET:  toolbox.Round(priceAskVET, 5),
 		Volume:    volumeAsk,
 		CreatedAt: createdAt,
 	}
 
 	bid := &data.Bid{
 		Price:     priceBid,
-		PriceVET:  priceBidVET,
+		PriceVET:  toolbox.Round(priceBidVET, 5),
 		Volume:    volumeBid,
 		CreatedAt: createdAt,
 	}
