@@ -43,16 +43,8 @@ var (
 
 // Run() fetch the data from the Iexchange one time
 func (pod *Pod) Run() error {
-	// check if exchange if nil
-	// fetchExchange
-	// here we need to have all data, before filter
 	ask, bid, err := pod.fetchBestOrder()
 
-	// validate - pod is the man with the bus rules
-	// has volume?
-	// has the min that attend?
-	// here we now that the data comming from input is validated
-	// insert this into validation
 	if err != nil {
 		fmt.Printf("Error: %v", ErrfetchBestOrderNil)
 		return nil
@@ -73,10 +65,6 @@ func (pod *Pod) Run() error {
 		return ErrBidZeroVolume
 	}
 
-	// orderbook.validate.rules
-	// if something... only 3 orders
-	// now we are just passing withour rules
-
 	// send msg over gRPC
 	pod.sendBestOrderViaGRPC()
 
@@ -92,13 +80,10 @@ func (pod *Pod) fetchBestOrder() (*data.Ask, *data.Bid, error) {
 		return nil, nil, err
 	}
 
-	// insert into order data bus layer
 	return ask, bid, nil
 }
 
 func (pod *Pod) sendBestOrderViaGRPC() {
-	// fmt.Println("Pod.sendBestOrderViaGRPC")
-
 	oa := &orders.Order{
 		Id:        pod.exchange.ExchangeID(),
 		Price:     pod.orderbook.Ask.Price,
@@ -119,25 +104,16 @@ func (pod *Pod) sendBestOrderViaGRPC() {
 
 	// logging to debug pods
 	// can be a routine?
-	pod.l.Info("Sending best ask and bid order",
-		zap.String("aid", oa.Id),
-		zap.Float64("aPrice", oa.Price),
-		zap.Float64("aPriceVET", oa.PriceVET),
-		zap.Float64("aVolume", oa.Volume),
-		zap.String("aCreatedAt", pod.orderbook.Ask.CreatedAt.String()),
-		zap.String("bid", ob.Id),
-		zap.Float64("bPrice", ob.Price),
-		zap.Float64("bPriceVET", ob.PriceVET),
-		zap.Float64("bVolume", ob.Volume),
-		zap.String("bCreatedAt", pod.orderbook.Bid.CreatedAt.String()),
-	)
+	// pod.l.Info("Sending best ask and bid order",
+	// 	zap.String("aid", oa.Id),
+	// 	zap.Float64("aPrice", oa.Price),
+	// 	zap.Float64("aPriceVET", oa.PriceVET),
+	// 	zap.Float64("aVolume", oa.Volume),
+	// 	zap.String("aCreatedAt", pod.orderbook.Ask.CreatedAt.String()),
+	// 	zap.String("bid", ob.Id),
+	// 	zap.Float64("bPrice", ob.Price),
+	// 	zap.Float64("bPriceVET", ob.PriceVET),
+	// 	zap.Float64("bVolume", ob.Volume),
+	// 	zap.String("bCreatedAt", pod.orderbook.Bid.CreatedAt.String()),
+	// )
 }
-
-// type inputData struct {
-// }
-
-// type outputData struct {
-// }
-
-// value object - bestOrder - muda a cada pesquisa e fetch
-// entidade - não muda.

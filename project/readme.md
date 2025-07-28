@@ -72,6 +72,10 @@ PODS - PORTS USED
 15004 - RIPI
 
 
+04-07
+TODO:
+- check error: FAILURE: Unable to generate ticket for WebSocket.
+
 --------
 ERROR: [bina order error]: <APIError> code=-1013, msg=Filter failure: LOT_SIZE - &{0.1943 SOLBRL 872.6 buy limit}
 RULE: API URL -> {{url}}/api/v3/exchangeInfo?symbol=SOLBRL        
@@ -82,10 +86,6 @@ RULE: API URL -> {{url}}/api/v3/exchangeInfo?symbol=SOLBRL
     "stepSize": "0.00100000"
 },
 FIX: amount need to have 3 decimals.
-
------ 
-ERROR sem fundos na binance
-2024/06/11 12:47:31 ERROR Error: !BADKEY="Funds insufficient"
 -----
 ERRO sem internet:
 ERROR error sending ntfy msg status=429

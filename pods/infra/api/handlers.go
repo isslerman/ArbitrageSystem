@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"pods/internal/pod"
 
 	"net/http"
@@ -19,8 +20,10 @@ func (api *Server) StartPod(w http.ResponseWriter, r *http.Request) {
 	go api.runPod(api.stopCh)
 	api.isRunning = true
 
-	w.Write([]byte("Pod started"))
-	api.l.Info("Pod started")
+	w.Write([]byte("Pod started."))
+
+	api.l.Info(fmt.Sprintf("API Server running on port: %d", api.port))
+	api.l.Info("Access URLs: /status /start /stop")
 }
 
 func (api *Server) StopPod(w http.ResponseWriter, r *http.Request) {

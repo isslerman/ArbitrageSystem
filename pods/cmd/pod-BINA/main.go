@@ -12,10 +12,14 @@ import (
 	"go.uber.org/zap"
 )
 
+// Pod is an API service that collects data from the exchange/source, proccess and send
+// to the grpc server
+
+// Application config
 type config struct {
 	Name        string
 	Version     string
-	Port        int
+	Port        int     `json:"api_port"`
 	BaseSymbol  string  `json:"base_symbol"`
 	QuoteSymbol string  `json:"quote_symbol"`
 	FeeTaker    float64 `json:"fee_taker"`
@@ -30,9 +34,13 @@ type application struct {
 	l       *zap.Logger
 }
 
+// Start the application and load the config
 func newApplication() *application {
 	app := &application{}
 	app.loadConfig()
+
+	// init logger
+	app.l = logger.Get(app.Name)
 
 	return app
 }
@@ -45,9 +53,8 @@ func main() {
 	// create the exchange instance to be injected into the application
 	e := exchange.NewBinance(symbol, app.config.FeeTaker, app.config.FeeMaker)
 
-	// create apiSrv instance
-	apiSrv := api.NewServer(e, app.config.Port, app.l)
-	app.apiSrv = apiSrv
+	// create server api and start
+	app.apiSrv = api.NewServer(e, app.config.Port, app.l)
 	app.apiSrv.StartServer()
 }
 
@@ -63,9 +70,6 @@ func (app *application) loadConfig() error {
 	if err != nil {
 		log.Fatalf("Error loading config file, %s", err)
 	}
-
-	// init logger
-	app.l = logger.Get(app.Name)
 
 	return nil
 }

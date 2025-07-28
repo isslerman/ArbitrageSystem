@@ -1,0 +1,38 @@
+# GRPC server
+server: 
+  grpc_port: 50001
+
+# Trading pair symbols
+symbols:
+  base: "USDT"
+  quote: "BRL"
+
+# Trading parameters
+trade:
+  amount: 0.10                          # Base asset amount per trade
+  threshold_remake_order: 0.15         # % variation before remaking order
+  profit: 1.00                          # % target profit (gross, excluding maker fee)
+  ask_side: true                       # Enable sell side
+  bid_side: false                      # Enable buy side
+
+# Fee configuration
+fees:
+  taker: 0.00075
+  maker: 0.00450
+
+# WebSocket connection settings
+websocket:
+  wss_url: "wss://stream.binance.com:9443/ws"
+
+# PostgreSQL connection string
+database:
+  host: localhost
+  port: 5432
+  user: user
+  password: password
+  name: arbitrage_system
+  ssl_mode: disable
+  timezone: UTC
+  connect_timeout_seconds: 5
+  dsn: "host=localhost port=5432 user=user password=password dbname=arbitrage_system sslmode=disable timezone=UTC connect_timeout=5"
+

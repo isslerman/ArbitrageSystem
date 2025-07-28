@@ -1,0 +1,18 @@
+// this is a sample json file
+// all comments must be removed before running the script
+// this file must be placed together with the binary to run
+{
+    "grpc_port": 50001,
+    "base_symbol": "SOL",
+    "quote_symbol": "BRL",
+    // the percent that the price can vary before being remade
+    "threshold_remake_order": 0.15,
+    // the profit to be added to the price excluded the fee_maker, it's only the price
+    // the fee of the taker is included in the price that comes from the pod(grpc)
+    "profit": 1.00,
+    "amount": 0.10,
+    "ask_side": "true",
+    "bid_side": "false",
+    "fee_taker": 0.00075,
+    "fee_maker": 0.00450
+}

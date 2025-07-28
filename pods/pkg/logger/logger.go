@@ -89,28 +89,3 @@ func Get(id string) *zap.Logger {
 
 	return logger
 }
-
-// // FromCtx returns the Logger associated with the ctx. If no logger
-// // is associated, the default logger is returned, unless it is nil
-// // in which case a disabled logger is returned.
-// func FromCtx(ctx context.Context) *zap.Logger {
-// 	if l, ok := ctx.Value(ctxKey{}).(*zap.Logger); ok {
-// 		return l
-// 	} else if l := logger; l != nil {
-// 		return l
-// 	}
-
-// 	return zap.NewNop()
-// }
-
-// // WithCtx returns a copy of ctx with the Logger attached.
-// func WithCtx(ctx context.Context, l *zap.Logger) context.Context {
-// 	if lp, ok := ctx.Value(ctxKey{}).(*zap.Logger); ok {
-// 		if lp == l {
-// 			// Do not store same logger.
-// 			return ctx
-// 		}
-// 	}
-
-// 	return context.WithValue(ctx, ctxKey{}, l)
-// }

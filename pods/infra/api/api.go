@@ -43,7 +43,6 @@ func NewServer(e exchange.IExchange, port int, l *zap.Logger) Server {
 }
 
 func (api *Server) StartServer() {
-
 	err := http.ListenAndServe(fmt.Sprintf(":%d", api.port), api.Routes())
 	if err != nil {
 		log.Fatal(err)

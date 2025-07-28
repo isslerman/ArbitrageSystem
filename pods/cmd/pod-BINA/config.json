@@ -1,9 +1,9 @@
 {
     "name": "Binance",
     "version": "1.0.0",
-    "port": 15000,
-    "base_symbol": "SOL",
+    "api_port": 15000,
+    "base_symbol": "USDT",
     "quote_symbol": "BRL",
-    "fee_taker": 0.10,
-    "fee_maker": 0.10
+    "fee_taker": 0.00075,
+    "fee_maker": 0.00075
 }

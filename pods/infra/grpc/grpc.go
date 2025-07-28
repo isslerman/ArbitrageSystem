@@ -32,7 +32,7 @@ func NewServiceGRPC(l *zap.Logger) *Config {
 	target := fmt.Sprintf("%s:%d", app.host, app.port)
 	conn, err := grpc.Dial(target, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 	if err != nil {
-		log.Fatal("Error Conn")
+		log.Fatal("Error starting GRPC server:", err)
 	}
 	// defer conn.Close()
 

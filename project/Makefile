@@ -105,7 +105,7 @@ build-server:
 ## start: start gRPC server
 start-server: 
 	@echo "Starting gRPC server"
-	cd ../grpc-server/bin && ./${GRPC_SERVER_BINARY} -dsn "host=localhost port=5432 user=user password=password dbname=arbitrage_system sslmode=disable timezone=UTC connect_timeout=5"
+	cd ../grpc-server/bin && ./${GRPC_SERVER_BINARY}
 	@echo "Done!"
 
 ## stop: stop the gRPC server
