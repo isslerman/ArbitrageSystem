@@ -13,8 +13,8 @@ import (
 )
 
 func main() {
-	apiKey := "wpCbnuCGOYuKsS24LA5en4k0GVDahHxxW3cJAld3ldkbjwLwhWEfdsni7ssfmDMK"
-	derB64 := "MC4CAQAwBQYDK2VwBCIEINzxjOfc9ged4OA6HgOIM0gNVOivlf900toUeSToVpmg"
+	apiKey := ""
+	derB64 := ""
 
 	// Convert a BASE64 string to bytes - [00 00 00 00 ... 00 00]
 	der, err := base64.StdEncoding.DecodeString(derB64)
