@@ -2,6 +2,7 @@ package strategy
 
 import (
 	"context"
+	"errors"
 	"looper/config"
 	"looper/internal/marketdata"
 	"looper/internal/oms"
@@ -62,7 +63,7 @@ func (s *MakerStrategy) Run(ctx context.Context, marketData <-chan *marketdata.B
 		case <-ticker.C:
 			if time.Since(s.lastUpdate) > inactivityTimeout {
 				s.Logger.Errorw("No marketdata received for 30s. Stopping strategy.")
-				return ctx.Err()
+				return errors.New("marketdata timeout: no updates received in 30s")
 			}
 
 		case <-ctx.Done():

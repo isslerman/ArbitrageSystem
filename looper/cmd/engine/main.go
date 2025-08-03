@@ -27,7 +27,7 @@ func main() {
 
 	e := engine.New(cfg)
 
-	if err := e.Start(ctx); err != nil {
+	if err := e.Start(ctx, stop); err != nil {
 		slog.Error("service failed", "err", err)
 		return
 	}

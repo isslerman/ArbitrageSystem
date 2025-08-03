@@ -8,7 +8,8 @@ import (
 	"strconv"
 )
 
-func (e *Engine) Start(ctx context.Context) error {
+func (e *Engine) Start(ctx context.Context, stop context.CancelFunc) error {
+	errChan := make(chan error, 1)
 	//////////////////////
 	// Connect to Postgres
 	conn, err := repository.ConnectToPostgres(e.cfg.Database.DSN)
@@ -37,20 +38,23 @@ func (e *Engine) Start(ctx context.Context) error {
 	// oms := oms.NewBina(ctx, cfg)
 	e.Strategy = strategy.NewMakerStrategy(ctx, e.cfg, e.Logger)
 
-	go e.Strategy.Run(ctx, e.MarketData.Updates(), e.Strategy.GetOrderStream())
-	// ob := srv.Models.OrderBook
+	// Run the strategy over a go routine and watch by a errChan
+	go func() {
+		err := e.Strategy.Run(ctx, e.MarketData.Updates(), e.Strategy.GetOrderStream())
+		errChan <- err
+	}()
 
-	// Strategie config and load
-	// cexAsk := cex.InstanceRipi
-	// cexBid := cex.InstanceBina
-	// aSymbol := fmt.Sprintf("%s_%s", a.cfg.Symbols.Base, a.cfg.Symbols.Quote) // exchange A SOL_BRL <base_quote>
-	// bSymbol := fmt.Sprintf("%s%s", a.cfg.Symbols.Base, a.cfg.Symbols.Quote)  // exchange B SOLBRL <basequote>
-
-	// // creating a new AC
-	// a.ac, err = NewArbitrageControl(cexAsk, cexBid, aSymbol, bSymbol, a.DB, a.Notify, a.cfg)
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
+	go func() {
+		select {
+		case <-ctx.Done():
+			e.Logger.Warn("Context canceled, exiting strategy manager")
+		case err := <-errChan:
+			if err != nil {
+				e.Logger.Errorw("Strategy exited with error", "err", err)
+				stop()
+			}
+		}
+	}()
 
 	return nil
 }
