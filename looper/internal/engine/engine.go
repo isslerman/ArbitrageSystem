@@ -1,16 +1,15 @@
 package engine
 
 import (
-	"context"
 	"fmt"
 	"looper/config"
 	"looper/infra/ntfy"
 	"looper/internal/marketdata"
 	"looper/internal/repository"
-	"looper/pkg/data"
-	"time"
+	"looper/internal/strategy"
 
-	"github.com/gookit/slog"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 // Our app confiiguration.
@@ -19,111 +18,53 @@ type Engine struct {
 	cfg        *config.Config // Configuration for the app
 	Repo       repository.Repository
 	Notify     *ntfy.Ntfy // Notify sends notifications to mobile
-	MarketData *marketdata.MarketDataReceiver
+	MarketData *marketdata.MarketData
+	Strategy   strategy.Strategy
+	Logger     *zap.SugaredLogger
 	// ac       *ArbitrageControld
 }
 
 func New(cfg *config.Config) *Engine {
-	return &Engine{
+	e := &Engine{
 		cfg: cfg,
 	}
+	e.Logger = e.initLogger()
+	return e
 }
 
-// bestOrder receives the OrderBook over gRPC
-// and find the best ask and bid orders every 2 seconds
-func (e *Engine) run(ctx context.Context, ob *data.OrderBook) {
-	ticker := time.NewTicker(1500 * time.Millisecond)
-	defer ticker.Stop()
+func (e *Engine) initLogger() *zap.SugaredLogger {
+	cfg := zap.NewDevelopmentConfig()
+	cfg.Level = zap.NewAtomicLevelAt(zap.DebugLevel)
+	cfg.EncoderConfig.TimeKey = "time"
+	cfg.EncoderConfig.EncodeTime = zapcore.TimeEncoderOfLayout("15:04:05.000")
 
-	for {
-		select {
-		case <-ctx.Done():
-			slog.Warn("run() stopped due to context cancellation")
-			return
+	// 💡 Enable color on the log level
+	cfg.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
 
-		case <-ticker.C:
-			if ob.SizeAsk() > 0 && ob.SizeBid() > 0 {
-				ba := ob.BestAsk()
-				bb := ob.BestBid()
-				spread := (1 - (ba.PriceVET / bb.PriceVET)) * 100
-				createdAt := time.Now().Unix()
-
-				// e.strategyArbitrageContol(ba, bb)
-
-				aho := &data.AskOrder{
-					ExcID:    ba.ID,
-					Price:    ba.Price,
-					PriceVET: ba.PriceVET,
-					Volume:   ba.Volume,
-				}
-				bho := &data.BidOrder{
-					ExcID:    bb.ID,
-					Price:    bb.Price,
-					PriceVET: bb.PriceVET,
-					Volume:   bb.Volume,
-				}
-
-				if _, err := e.Repo.StoreOrderHistory(spread, aho, bho, createdAt); err != nil {
-					e.Repo.LogError(fmt.Sprintf("app.run: error saving to DB: %v", err))
-					slog.Error("failed to save order history", "err", err)
-				}
-
-				slog.Info("Best Ask", "id", ba.ID, "price", ba.Price, "priceVET", ba.PriceVET, "volume", ba.Volume)
-				slog.Info("Best Bid", "id", bb.ID, "price", bb.Price, "priceVET", bb.PriceVET, "volume", bb.Volume)
-			}
-
-			ob.RemoveExpiredAsks()
-			ob.RemoveExpiredBids()
-		}
+	zapLogger, err := cfg.Build()
+	if err != nil {
+		panic(fmt.Errorf("failed to initialize logger: %w", err))
 	}
+
+	return zapLogger.Sugar()
 }
 
 func (e *Engine) GracefullyShutdown() {
-	slog.Warn("Shutting down server...")
-	e.Repo.LogInfo("ALERT: Shutting down server...")
+	e.Logger.Info("Shutting down server...")
+	e.Logger.Info("Closing all open orders.")
 
-	slog.Warn("Closing all open orders.")
+	e.Repo.LogInfo("ALERT: Shutting down server...")
 	e.Repo.LogInfo("ALERT: Closing all open orders.")
 
-	// TODO Change here to OMS
-	// if err := e.ac.cancelAllOrders(); err != nil {
-	// 	slog.Error("Error canceling all orders", "err", err)
-	// 	e.DB.SaveLoggerErr("WARNING: Error canceling all orders, check the exchange for open orders.")
-	// } else {
-	// 	slog.Info("All orders cancelled successfully.")
-	// 	app.DB.SaveLoggerInfo("No error, all orders cancelled.")
-	// }
+	if err := e.Strategy.StopAllOrders(); err != nil {
+		e.Logger.Errorf("Error canceling all orders, check the exchange for open orders.", "err", err)
+	} else {
+		e.Logger.Info("All orders cancelled successfully.")
+	}
 
-	finalMsg := "---> SERVER STOPPED <---"
-	slog.Warn(finalMsg)
-	e.Repo.LogInfo(finalMsg)
-	e.Repo.LogError(finalMsg)
+	e.Repo.Stop()
+	e.Logger.Info("Shutdown complete")
 }
-
-// func (e *Engine) strategyArbitrageContol(ba, bb *data.Order) {
-// 	// Log info
-// 	info := fmt.Sprintf("[New Price received] [%s] - PriceVET, %f, Vol, %f", ba.ID, ba.PriceVET, ba.Volume)
-// 	e.DB.SaveLoggerInfo(info)
-
-// 	// creating ask order
-// 	a, err := data.NewAskOpenOrder(ba.Volume, ba.PriceVET, e.ac.ASymbol, "limit")
-// 	if err != nil {
-// 		err := fmt.Sprintf("[Error creating NewAskOpenOrder] [%s] - %f, %f, %s, sell, %s", ba.ID, ba.Volume, ba.PriceVET, app.ac.ASymbol, err)
-// 		e.DB.SaveLoggerErr(err)
-// 		return
-// 	}
-
-// 	// creating bid order
-// 	b, err := data.NewBidOpenOrder(bb.Volume, bb.PriceVET, e.ac.ASymbol, "limit")
-// 	if err != nil {
-// 		err := fmt.Sprintf("[Error creating NewBidOpenOrder] [%s] - %f, %f, %s, buy, %s", bb.ID, bb.Volume, bb.PriceVET, app.ac.ASymbol, err)
-// 		e.DB.SaveLoggerErr(err)
-// 		return
-// 	}
-
-// 	e.ac.AskOpenOrder(a)
-// 	e.ac.BidOpenOrder(b)
-// }
 
 // setupNotifyService send a msg to ntfy mobile app
 func (e *Engine) setupNotifyService() {

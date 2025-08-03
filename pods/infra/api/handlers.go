@@ -55,7 +55,7 @@ func (api *Server) runPod(stopChan <-chan bool) {
 				api.l.Error("error running pod", zap.Error(err))
 			}
 
-			time.Sleep(time.Second * 1)
+			time.Sleep(time.Millisecond * 500)
 		}
 	}
 }

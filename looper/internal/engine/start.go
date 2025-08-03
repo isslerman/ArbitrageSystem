@@ -4,37 +4,40 @@ import (
 	"context"
 	"looper/internal/marketdata"
 	"looper/internal/repository"
+	"looper/internal/strategy"
 	"strconv"
-
-	"github.com/gookit/slog"
 )
 
 func (e *Engine) Start(ctx context.Context) error {
+	//////////////////////
 	// Connect to Postgres
 	conn, err := repository.ConnectToPostgres(e.cfg.Database.DSN)
 	if err != nil {
-		slog.Error("failed to connect to Postgres", "db", e.cfg.Database.Name, "err", err)
+		e.Logger.Errorw("failed to connect to Postgres",
+			"db", e.cfg.Database.Name,
+			"err", err,
+		)
 		return err
 	}
-
 	// Assign repository to Engine
 	e.Repo = repository.NewPostgresDBRepo(conn)
-
-	// Ensure DB is closed on shutdown
-	go func() {
-		<-ctx.Done()
-		slog.Info("Closing database connection")
-		_ = conn.Close()
-	}()
 
 	// Initial checkup
 	e.Repo.LogInfo("---> SERVER STARTING <---")
 
 	// Register the gRPC Server
-	srv := marketdata.NewOrderServer()
-	slog.Debug("config", "cfg", e.cfg)
-	go marketdata.GRPCListen(srv, strconv.Itoa(e.cfg.Server.GrpcPort))
+	md := marketdata.NewMarketData(e.Repo, e.Logger)
+	_, err = marketdata.GRPCListen(md, strconv.Itoa(e.cfg.Server.GrpcPort))
+	if err != nil {
+		e.Logger.Fatalf("failed to start gRPC server: %v", err)
+	}
+	e.MarketData = md
 
+	// Register the OMS
+	// oms := oms.NewBina(ctx, cfg)
+	e.Strategy = strategy.NewMakerStrategy(ctx, e.cfg, e.Logger)
+
+	go e.Strategy.Run(ctx, e.MarketData.Updates(), e.Strategy.GetOrderStream())
 	// ob := srv.Models.OrderBook
 
 	// Strategie config and load

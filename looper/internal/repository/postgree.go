@@ -4,15 +4,22 @@ import (
 	"database/sql"
 	"log/slog"
 	"looper/pkg/data"
+	"sync/atomic"
 	"time"
 )
 
 type PostgresDBRepo struct {
-	db *sql.DB
+	db     *sql.DB
+	closed atomic.Bool
 }
 
 func NewPostgresDBRepo(db *sql.DB) *PostgresDBRepo {
 	return &PostgresDBRepo{db: db}
+}
+
+func (c *PostgresDBRepo) Stop() {
+	c.closed.Store(true)
+	_ = c.db.Close()
 }
 
 func (c *PostgresDBRepo) StoreOrderHistory(spread float64, ask *data.AskOrder, bid *data.BidOrder, createdAt int64) (string, error) {
@@ -29,6 +36,10 @@ func (c *PostgresDBRepo) StoreOrderHistory(spread float64, ask *data.AskOrder, b
 }
 
 func (c *PostgresDBRepo) LogInfo(log string) {
+	if c.closed.Load() {
+		return
+	}
+
 	log = truncate(log, 250)
 	createdAt := time.Now()
 
@@ -44,6 +55,10 @@ func (c *PostgresDBRepo) LogInfo(log string) {
 }
 
 func (c *PostgresDBRepo) LogError(log string) {
+	if c.closed.Load() {
+		return
+	}
+
 	log = truncate(log, 250)
 	createdAt := time.Now()
 

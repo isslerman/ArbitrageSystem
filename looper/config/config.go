@@ -24,6 +24,7 @@ type Config struct {
 		Profit               float64 `mapstructure:"profit"`
 		AskSide              bool    `mapstructure:"ask_side"`
 		BidSide              bool    `mapstructure:"bid_side"`
+		DryRun               bool    `mapstructure:"dry_run"`
 	} `mapstructure:"trade"`
 
 	Fees struct {

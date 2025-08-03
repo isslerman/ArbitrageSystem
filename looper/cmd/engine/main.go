@@ -2,15 +2,20 @@ package main
 
 import (
 	"context"
+	"log"
 	"log/slog"
 	"looper/config"
 	"looper/internal/engine"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
+
+	"github.com/joho/godotenv"
 )
 
 func main() {
+	initEnv()
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
@@ -34,4 +39,16 @@ func main() {
 
 	<-ctx.Done()
 	e.GracefullyShutdown()
+}
+
+func initEnv() {
+	projectRoot, err := filepath.Abs(".")
+	if err != nil {
+		log.Fatal("Failed to get working directory")
+	}
+
+	envPath := filepath.Join(projectRoot, ".env")
+	if err := godotenv.Load(envPath); err != nil {
+		log.Fatalf("Failed to load env file at %s: %v", envPath, err)
+	}
 }

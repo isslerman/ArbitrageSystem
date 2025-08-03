@@ -9,16 +9,17 @@ symbols:
 
 # Trading parameters
 trade:
-  amount: 0.10                          # Base asset amount per trade
+  amount: 5                            # Base asset amount per trade
   threshold_remake_order: 0.15         # % variation before remaking order
   profit: 1.00                          # % target profit (gross, excluding maker fee)
   ask_side: true                       # Enable sell side
   bid_side: false                      # Enable buy side
+  dry_run: false
 
 # Fee configuration
 fees:
   taker: 0.00075
-  maker: 0.00450
+  maker: 0.00075
 
 # WebSocket connection settings
 websocket:

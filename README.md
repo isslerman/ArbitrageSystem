@@ -49,3 +49,20 @@ your-project/
 │
 ├── go.mod
 └── README.md
+
+
+---
+The OMS is responsible for:
+
+- Placing orders
+- Tracking orders
+- Handling order status (open, filled, canceled)
+- Reacting to order lifecycle events (e.g. partially filled → rebalance)
+
+🔄 Flow Overview
+1. Engine starts → initializes Strategy, MarketData, OMS, etc.
+2. OMS starts → spawns WebSocket listener.
+3. WebSocket handler listens to Binance executionReport events:
+   1. Detects fill/cancel
+   2. Updates internal order state
+   3. Notifies the strategy (via channel, callback, or internal flag)
